@@ -5,6 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
 <meta name="theme-color" content="#0f1115">
 <title>dio</title>
+<script>
+// Определяем устройство ДО отрисовки, чтобы не было «прыжка» дизайна.
+(function () {
+  var ua = navigator.userAgent, phone = false;
+  if (navigator.userAgentData && navigator.userAgentData.mobile) phone = true;
+  else if (/Android|iPhone|iPod|Windows Phone|Mobile|Opera Mini|IEMobile/i.test(ua)) phone = true;
+  // iPad/планшеты на iPadOS притворяются Mac — тач-экран с узкой стороной < 600px считаем телефоном
+  else if (matchMedia('(pointer:coarse)').matches && Math.min(screen.width, screen.height) < 600) phone = true;
+  document.documentElement.dataset.device = phone ? 'phone' : 'pc';
+})();
+</script>
 <style>
 :root {
   --bg:#0f1115; --panel:#161a21; --panel2:#1d222b; --line:#262c37;
@@ -15,39 +26,111 @@
 html, body { height:100% }
 body { background:var(--bg); color:var(--text); font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; overflow:hidden; -webkit-tap-highlight-color:transparent; -webkit-text-size-adjust:100% }
 button { font:inherit; cursor:pointer; border:0; background:none; color:inherit }
+button:disabled { cursor:default }
 input, textarea { font:inherit; color:inherit }
-svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round }
+svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; flex-shrink:0 }
 .hidden { display:none !important }
+
+/* ---------- общие элементы ---------- */
+.field { width:100%; padding:11px 12px; background:var(--panel2); border:1px solid var(--line); border-radius:10px; margin-bottom:10px; outline:none; resize:none }
+.field:focus { border-color:var(--accent) }
+.btn { width:100%; padding:11px; background:var(--accent); color:#fff; border-radius:10px; font-weight:600 }
+.btn:disabled { opacity:.5 }
+.btn.small { width:auto; padding:7px 16px; border-radius:20px; font-size:14px }
+.btn.ghost { background:none; border:1px solid var(--line); color:var(--text) }
+.btn.ghost:hover { background:var(--panel2) }
+.err { color:var(--danger); font-size:13px; min-height:18px; margin-top:8px; text-align:center }
+.empty, .loader { color:var(--muted); text-align:center; padding:24px 16px; font-size:14px }
+.loader:empty { padding:0; height:1px }
+.ava { width:46px; height:46px; border-radius:50%; flex-shrink:0; display:grid; place-items:center; font-weight:700; color:#fff; position:relative; font-size:17px; user-select:none }
+.ava.on::after { content:""; position:absolute; right:0; bottom:0; width:12px; height:12px; border-radius:50%; background:var(--ok); border:2px solid var(--panel) }
+.icon-btn { width:38px; height:38px; border-radius:50%; display:grid; place-items:center; color:var(--muted); flex-shrink:0 }
+.icon-btn:hover { background:var(--panel2); color:var(--text) }
+#conn { position:fixed; top:calc(10px + env(safe-area-inset-top)); left:50%; transform:translateX(-50%); background:var(--panel2); border:1px solid var(--line); padding:6px 14px; border-radius:20px; font-size:13px; color:var(--muted); z-index:50; white-space:nowrap }
 
 /* ---------- вход ---------- */
 #auth { height:100dvh; display:grid; place-items:center; padding:16px }
 .card { width:100%; max-width:360px; background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:28px 24px }
 .logo { font-size:36px; font-weight:800; letter-spacing:-1px; text-align:center }
-.logo span { color:var(--accent) }
+.logo span, .nav-logo span { color:var(--accent) }
 .sub { text-align:center; color:var(--muted); margin-bottom:20px; font-size:13px }
 .tabs { display:flex; background:var(--panel2); border-radius:10px; padding:3px; margin-bottom:16px }
 .tabs button { flex:1; padding:8px; border-radius:8px; color:var(--muted) }
 .tabs button.on { background:var(--line); color:var(--text) }
-.field { width:100%; padding:11px 12px; background:var(--panel2); border:1px solid var(--line); border-radius:10px; margin-bottom:10px; outline:none }
-.field:focus { border-color:var(--accent) }
-.btn { width:100%; padding:11px; background:var(--accent); color:#fff; border-radius:10px; font-weight:600 }
-.btn:disabled { opacity:.6 }
-.err { color:var(--danger); font-size:13px; min-height:18px; margin-top:8px; text-align:center }
 
-/* ---------- приложение ---------- */
-#app { height:100dvh; display:flex; padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left) }
+/* ---------- каркас: навигация + разделы ---------- */
+#app { height:100dvh; display:flex }
+#nav { width:76px; flex-shrink:0; background:var(--panel); border-right:1px solid var(--line); display:flex; flex-direction:column; align-items:center; gap:8px; padding:calc(14px + env(safe-area-inset-top)) 0 14px }
+.nav-logo { font-weight:800; font-size:24px; letter-spacing:-1px; margin-bottom:12px; user-select:none }
+.nav-btn { width:50px; height:50px; border-radius:14px; display:grid; place-items:center; color:var(--muted); position:relative }
+.nav-btn:hover { background:var(--panel2); color:var(--text) }
+.nav-btn.on { background:var(--line); color:var(--accent) }
+.nav-btn svg { width:24px; height:24px }
+.nav-btn .ava { width:34px; height:34px; font-size:14px }
+.nav-btn.on .ava { box-shadow:0 0 0 2px var(--panel), 0 0 0 4px var(--accent) }
+.nav-badge { position:absolute; top:3px; right:2px; min-width:18px; height:18px; border-radius:9px; background:var(--danger); color:#fff; font-size:11px; font-weight:700; display:grid; place-items:center; padding:0 5px }
+#views { flex:1; min-width:0; position:relative }
+.view { position:absolute; inset:0; overflow-y:auto; display:none; overscroll-behavior:contain }
+.view.on { display:block }
+#vMessages.on { display:flex; overflow:hidden }
+.col { max-width:640px; margin:0 auto; min-height:100%; border-left:1px solid var(--line); border-right:1px solid var(--line) }
+.top { position:sticky; top:0; z-index:5; background:rgba(15,17,21,.86); -webkit-backdrop-filter:blur(12px); backdrop-filter:blur(12px); border-bottom:1px solid var(--line); padding-top:env(safe-area-inset-top) }
+.top h1 { font-size:20px; padding:14px 16px 4px; display:flex; align-items:center; gap:8px }
+.top h1 .icon-btn { margin:-6px 0 -6px -8px }
+
+/* ---------- лента ---------- */
+.ftabs { display:flex }
+.ftabs button { flex:1; padding:12px; color:var(--muted); font-weight:600; position:relative }
+.ftabs button:hover { background:var(--panel2) }
+.ftabs button.on { color:var(--text) }
+.ftabs button.on::after { content:""; position:absolute; left:50%; bottom:0; width:56px; margin-left:-28px; height:3px; border-radius:3px; background:var(--accent) }
+.pill { display:block; margin:0 auto 10px; background:var(--accent); color:#fff; font-size:14px; font-weight:600; padding:6px 16px; border-radius:20px }
+.new-post { display:flex; gap:12px; padding:14px 16px; border-bottom:1px solid var(--line) }
+.new-post .ava { width:44px; height:44px }
+.new-post-main { flex:1; min-width:0 }
+#postInput { width:100%; background:none; border:0; outline:none; resize:none; font-size:17px; min-height:48px; max-height:320px; padding:10px 0 }
+.new-post-foot { display:flex; justify-content:flex-end; align-items:center; gap:12px; padding-top:8px; border-top:1px solid var(--line) }
+.counter { color:var(--muted); font-size:13px }
+.counter.over { color:var(--danger) }
+.post { display:flex; gap:12px; padding:14px 16px 8px; border-bottom:1px solid var(--line) }
+.post .ava { width:44px; height:44px; cursor:pointer }
+.post-main { flex:1; min-width:0 }
+.post-head { display:flex; gap:6px; align-items:center; min-width:0 }
+.post-name { font-weight:700; cursor:pointer; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex-shrink:1 }
+.post-name:hover { text-decoration:underline }
+.post-sub { color:var(--muted); font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:1 }
+.post-del { color:var(--muted); width:30px; height:30px; border-radius:50%; display:grid; place-items:center; margin:-6px -6px -6px 0 }
+.post-del svg { width:17px; height:17px }
+.post-del:hover { color:var(--danger); background:rgba(255,107,107,.1) }
+.post-body { white-space:pre-wrap; overflow-wrap:anywhere; margin-top:2px; font-size:15.5px }
+.post-actions { display:flex; gap:16px; margin:6px 0 0 -8px }
+.act { display:flex; align-items:center; gap:6px; color:var(--muted); padding:5px 8px; border-radius:16px; font-size:14px }
+.act svg { width:19px; height:19px }
+.act:hover { color:var(--danger); background:rgba(255,107,107,.1) }
+.act.liked { color:var(--danger) }
+.act.liked svg { fill:currentColor }
+
+/* ---------- профиль ---------- */
+.prof { padding:20px 16px 16px; border-bottom:1px solid var(--line) }
+.prof-top { display:flex; align-items:flex-end; justify-content:space-between; gap:12px }
+.ava.big { width:92px; height:92px; font-size:36px }
+.ava.big.on::after { width:18px; height:18px; border-width:3px; border-color:var(--bg); right:4px; bottom:4px }
+.prof-btns { display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end }
+.prof-name { font-size:22px; font-weight:800; margin-top:12px; overflow-wrap:anywhere }
+.prof-user { color:var(--muted) }
+.prof-bio { margin-top:10px; white-space:pre-wrap; overflow-wrap:anywhere }
+.prof-stats { display:flex; gap:18px; margin-top:12px; color:var(--muted); font-size:14px; flex-wrap:wrap }
+.prof-stats b { color:var(--text) }
+.prof textarea.field { min-height:80px }
+
+/* ---------- сообщения ---------- */
 #side { width:340px; flex-shrink:0; border-right:1px solid var(--line); display:flex; flex-direction:column; background:var(--panel) }
-.side-head { display:flex; align-items:center; gap:10px; padding:12px }
-.me-name { flex:1; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
-.icon-btn { width:38px; height:38px; border-radius:50%; display:grid; place-items:center; color:var(--muted); flex-shrink:0 }
-.icon-btn:hover { background:var(--panel2); color:var(--text) }
+.side-head { padding:calc(14px + env(safe-area-inset-top)) 16px 10px; font-size:20px; font-weight:700 }
 .field.search { width:auto; margin:0 12px 8px }
 #list { flex:1; overflow-y:auto }
 .item { display:flex; gap:12px; padding:10px 12px; cursor:pointer; align-items:center }
 .item:hover { background:var(--panel2) }
 .item.on { background:var(--line) }
-.ava { width:46px; height:46px; border-radius:50%; flex-shrink:0; display:grid; place-items:center; font-weight:700; color:#fff; position:relative; font-size:17px; user-select:none }
-.ava.on::after { content:""; position:absolute; right:0; bottom:0; width:12px; height:12px; border-radius:50%; background:var(--ok); border:2px solid var(--panel) }
 .meta { flex:1; min-width:0 }
 .row { display:flex; justify-content:space-between; gap:8px; align-items:center }
 .title { font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
@@ -55,15 +138,13 @@ svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:2; s
 .prev { color:var(--muted); font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1 }
 .prev.typing { color:var(--accent) }
 .badge { background:var(--accent); color:#fff; border-radius:10px; font-size:12px; padding:1px 7px; font-weight:600; flex-shrink:0 }
-.empty { color:var(--muted); text-align:center; padding:24px 16px; font-size:14px }
 .section { color:var(--muted); font-size:12px; padding:8px 12px 4px; text-transform:uppercase; letter-spacing:.5px }
-
 #main { flex:1; display:flex; flex-direction:column; min-width:0 }
 #placeholder { flex:1; display:grid; place-items:center; color:var(--muted); padding:16px; text-align:center }
 #chat { flex:1; display:flex; flex-direction:column; min-height:0 }
-.chat-head { display:flex; align-items:center; gap:10px; padding:8px 12px; border-bottom:1px solid var(--line); background:var(--panel); min-height:58px }
-.chat-head .ava { width:38px; height:38px; font-size:15px }
-.chat-head .ava.on::after { border-color:var(--panel) }
+.chat-head { display:flex; align-items:center; gap:10px; padding:calc(8px + env(safe-area-inset-top)) 12px 8px; border-bottom:1px solid var(--line); background:var(--panel); min-height:58px }
+.chat-head .ava { width:38px; height:38px; font-size:15px; cursor:pointer }
+.chat-head .title { cursor:pointer }
 #back { display:none }
 .status { color:var(--muted); font-size:13px }
 .status.online, .status.typing { color:var(--accent) }
@@ -76,31 +157,47 @@ svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:2; s
 .msg.pending { opacity:.75 }
 .msg.failed { cursor:pointer }
 .msg.failed .info { color:var(--danger) }
-#composer { display:flex; gap:8px; padding:8px 12px 12px; align-items:flex-end; border-top:1px solid var(--line); background:var(--panel) }
+#composer { display:flex; gap:8px; padding:8px 12px calc(12px + env(safe-area-inset-bottom)); align-items:flex-end; border-top:1px solid var(--line); background:var(--panel) }
 #input { flex:1; resize:none; max-height:160px; padding:10px 14px; border-radius:20px; background:var(--panel2); border:1px solid var(--line); outline:none; line-height:1.35 }
 #input:focus { border-color:var(--accent) }
 #send { width:42px; height:42px; border-radius:50%; background:var(--accent); color:#fff; display:grid; place-items:center; flex-shrink:0 }
-#conn { position:fixed; top:calc(10px + env(safe-area-inset-top)); left:50%; transform:translateX(-50%); background:var(--panel2); border:1px solid var(--line); padding:6px 14px; border-radius:20px; font-size:13px; color:var(--muted); z-index:10; white-space:nowrap }
 
-/* телефон и приложение-обёртка: показываем либо список, либо чат */
-@media (max-width:720px) {
-  #side { width:100%; border-right:0 }
-  #main { display:none }
-  body.in-chat #side { display:none }
-  body.in-chat #main { display:flex }
-  #back { display:grid }
-  .msg { max-width:85% }
-}
+/* узкое окно (и телефон): в сообщениях показываем либо список, либо чат */
+.compact #side { width:100%; border-right:0 }
+.compact #main { display:none }
+.compact body.in-chat #side { display:none }
+.compact body.in-chat #main { display:flex }
+.compact #back { display:grid }
+.compact .msg { max-width:85% }
+
+/* ---------- ТЕЛЕФОН: навигация снизу, контент на всю ширину ---------- */
+[data-device=phone] #app { flex-direction:column-reverse }
+[data-device=phone] #nav { width:auto; flex-direction:row; justify-content:space-around; gap:0; border-right:0; border-top:1px solid var(--line); padding:4px 0 calc(4px + env(safe-area-inset-bottom)) }
+[data-device=phone] .nav-logo { display:none }
+[data-device=phone] .nav-btn { width:64px; height:48px }
+[data-device=phone] .nav-btn.on { background:none }
+[data-device=phone] .nav-btn .ava { width:30px; height:30px; font-size:13px }
+[data-device=phone] body.in-chat #nav { display:none }
+[data-device=phone] .col { border:0 }
+[data-device=phone] .top h1 { font-size:18px; padding-top:10px }
+[data-device=phone] .post { padding:12px 14px 6px; gap:10px }
+[data-device=phone] .post .ava, [data-device=phone] .new-post .ava { width:40px; height:40px; font-size:15px }
+[data-device=phone] .post-body { font-size:15px }
+[data-device=phone] #postInput { font-size:16px } /* 16px — чтобы iOS не зумил поле */
+[data-device=phone] #input { font-size:16px }
+[data-device=phone] .ava.big { width:76px; height:76px; font-size:30px }
+[data-device=phone] .prof-btns .btn.small { padding:6px 12px }
 </style>
 </head>
 <body>
 
 <div id="conn" class="hidden"></div>
 
+<!-- ================= Вход ================= -->
 <section id="auth" class="hidden">
   <form class="card" id="authForm">
     <div class="logo">di<span>o</span></div>
-    <div class="sub">мессенджер</div>
+    <div class="sub">социальная сеть</div>
     <div class="tabs">
       <button type="button" data-mode="login" class="on">Вход</button>
       <button type="button" data-mode="register">Регистрация</button>
@@ -113,73 +210,152 @@ svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:2; s
   </form>
 </section>
 
+<!-- ================= Приложение ================= -->
 <section id="app" class="hidden">
-  <aside id="side">
-    <div class="side-head">
-      <div class="ava" id="meAva"></div>
-      <div class="me-name" id="meName"></div>
-      <button class="icon-btn" id="logout" title="Выйти">
-        <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
-      </button>
-    </div>
-    <input class="field search" id="search" placeholder="Найти по логину или имени" autocomplete="off" autocapitalize="off" spellcheck="false">
-    <div id="list"></div>
-  </aside>
+  <nav id="nav">
+    <div class="nav-logo">d<span>.</span></div>
+    <button class="nav-btn" data-go="feed" title="Лента">
+      <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+    </button>
+    <button class="nav-btn" data-go="messages" title="Сообщения">
+      <svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 6l-10 7L2 6"/></svg>
+      <span class="nav-badge hidden" id="navBadge"></span>
+    </button>
+    <button class="nav-btn" data-go="me" title="Профиль">
+      <div class="ava" id="navAva"></div>
+    </button>
+  </nav>
 
-  <main id="main">
-    <div id="placeholder">Выберите чат или найдите собеседника через поиск</div>
-    <div id="chat" class="hidden">
-      <div class="chat-head">
-        <button class="icon-btn" id="back" title="Назад">
-          <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
-        </button>
-        <div class="ava" id="peerAva"></div>
-        <div class="meta">
-          <div class="title" id="peerName"></div>
-          <div class="status" id="peerStatus"></div>
+  <div id="views">
+    <!-- Лента -->
+    <section class="view" id="vFeed">
+      <div class="col">
+        <div class="top">
+          <h1>Лента</h1>
+          <div class="ftabs">
+            <button data-scope="all" class="on">Все</button>
+            <button data-scope="following">Подписки</button>
+          </div>
         </div>
+        <div class="new-post">
+          <div class="ava" id="postAva"></div>
+          <div class="new-post-main">
+            <textarea id="postInput" rows="1" placeholder="Что нового?"></textarea>
+            <div class="new-post-foot">
+              <span class="counter" id="postCount"></span>
+              <button class="btn small" id="postBtn" disabled>Опубликовать</button>
+            </div>
+          </div>
+        </div>
+        <button class="pill hidden" id="newPosts" style="margin-top:10px"></button>
+        <div id="feedList"></div>
+        <div class="loader" id="feedMore"></div>
       </div>
-      <div id="msgs"></div>
-      <form id="composer">
-        <textarea id="input" rows="1" placeholder="Сообщение" maxlength="4000"></textarea>
-        <button id="send" title="Отправить">
-          <svg viewBox="0 0 24 24"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>
-        </button>
-      </form>
-    </div>
-  </main>
+    </section>
+
+    <!-- Сообщения (директ) -->
+    <section class="view" id="vMessages">
+      <aside id="side">
+        <div class="side-head">Сообщения</div>
+        <input class="field search" id="search" placeholder="Найти по логину или имени" autocomplete="off" autocapitalize="off" spellcheck="false">
+        <div id="list"></div>
+      </aside>
+      <main id="main">
+        <div id="placeholder">Выберите чат или найдите собеседника через поиск</div>
+        <div id="chat" class="hidden">
+          <div class="chat-head">
+            <button class="icon-btn" id="back" title="Назад">
+              <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+            </button>
+            <div class="ava" id="peerAva"></div>
+            <div class="meta">
+              <div class="title" id="peerName"></div>
+              <div class="status" id="peerStatus"></div>
+            </div>
+          </div>
+          <div id="msgs"></div>
+          <form id="composer">
+            <textarea id="input" rows="1" placeholder="Сообщение" maxlength="4000"></textarea>
+            <button id="send" title="Отправить">
+              <svg viewBox="0 0 24 24"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+            </button>
+          </form>
+        </div>
+      </main>
+    </section>
+
+    <!-- Профиль -->
+    <section class="view" id="vProfile">
+      <div class="col">
+        <div class="top">
+          <h1>
+            <button class="icon-btn hidden" id="profBack" title="Назад"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
+            <span id="profTitle">Профиль</span>
+          </h1>
+          <div style="height:8px"></div>
+        </div>
+        <div class="prof" id="profHead"></div>
+        <div id="profList"></div>
+        <div class="loader" id="profMore"></div>
+      </div>
+    </section>
+  </div>
 </section>
 
 <script>
 'use strict';
 
 // ================= Настройки =================
-// Адрес сервера на Amvera (поменяй на свой после деплоя).
 const PROD_SERVER = 'https://dio-myproj1.msk1.amvera.tech';
 const IS_LOCAL = ['localhost', '127.0.0.1', ''].includes(location.hostname);
 // Для отладки адрес можно переопределить: localStorage.dio_server = 'http://...'
 const SERVER = (store('dio_server') || (IS_LOCAL ? 'http://localhost:8080' : PROD_SERVER)).replace(/\/$/, '');
 const WS_URL = SERVER.replace(/^http/, 'ws') + '/ws';
 
+const DEVICE = document.documentElement.dataset.device; // 'phone' | 'pc'
 const TYPING_SEND_EVERY = 3000; // не чаще раза в 3 с шлём «печатает»
 const TYPING_SHOW_FOR = 5000;   // индикатор гаснет сам, если сигналы прекратились
 const PING_EVERY = 20000;       // проверка, что соединение живое
 const PONG_WAIT = 8000;
 const SEND_TIMEOUT = 10000;     // нет подтверждения — помечаем сообщение «не отправлено»
+const POST_MAX = 5000;
+
+const ICON = {
+  heart: '<svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8z"/></svg>',
+  trash: '<svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>',
+};
 
 // ================= Состояние =================
 const S = {
   token: store('dio_token'),
   me: null,
+  view: '',
+  // сообщения
   chats: new Map(),   // id -> чат
+  chatsLoaded: false,
   msgs: new Map(),    // id чата -> { list, more, loaded, busy }
   pending: new Map(), // cid -> сообщение, ещё не подтверждённое сервером
   typing: new Map(),  // id чата -> таймер индикатора «печатает»
   current: 0,
-  ws: null, retry: 0, reconnectTimer: 0, pingTimer: 0, pongTimer: 0,
   lastTypingSent: 0,
+  // соединение
+  ws: null, retry: 0, reconnectTimer: 0, pingTimer: 0, pongTimer: 0,
+  // соцсеть
+  posts: new Map(),   // id -> пост (общий кэш для ленты и профилей)
+  scope: 'all',
+  freshCount: 0,      // сколько новых постов пришло, пока лента не обновлена
+  prof: null,         // открытый профиль
+  profReq: 0,
 };
-let searchMode = false, searchTimer = 0, authMode = 'login';
+let searchMode = false, searchTimer = 0, authMode = 'login', navDepth = 0;
+
+// Список постов с подгрузкой при прокрутке (используется лентой и профилем)
+const FEED = { box: 'feedList', loader: 'feedMore', ids: [], more: true, busy: false, error: false, gen: 0,
+  url: () => '/api/feed?scope=' + S.scope,
+  empty: () => S.scope === 'following' ? 'Здесь будут посты людей, на которых вы подписаны' : 'Постов пока нет — напишите первый!' };
+const PROF = { box: 'profList', loader: 'profMore', ids: [], more: true, busy: false, error: false, gen: 0,
+  url: () => '/api/feed?user=' + (S.prof ? S.prof.id : 0),
+  empty: () => 'Постов пока нет' };
 
 // ================= Утилиты =================
 function store(k, v) {
@@ -196,9 +372,22 @@ function el(tag, cls, text) {
   return e;
 }
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-const isMobile = () => matchMedia('(max-width:720px)').matches;
 const newCid = () => crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2);
+const sameUser = (a, b) => String(a).toLowerCase() === String(b).toLowerCase();
 
+// «Компактный» режим: телефон или узкое окно на ПК — сообщения показываются по одному экрану
+function updateCompact() { document.documentElement.classList.toggle('compact', DEVICE === 'phone' || innerWidth < 760); }
+const isCompact = () => document.documentElement.classList.contains('compact');
+updateCompact();
+addEventListener('resize', updateCompact);
+
+function plural(n, forms) { // plural(5, ['пост','поста','постов'])
+  const a = Math.abs(n) % 100, b = a % 10;
+  if (a > 10 && a < 20) return forms[2];
+  if (b > 1 && b < 5) return forms[1];
+  if (b === 1) return forms[0];
+  return forms[2];
+}
 const pad = n => String(n).padStart(2, '0');
 const hm = ts => { const d = new Date(ts); return pad(d.getHours()) + ':' + pad(d.getMinutes()); };
 const sameDay = (a, b) => new Date(a).toDateString() === new Date(b).toDateString();
@@ -211,6 +400,14 @@ function dayLabel(ts) {
   return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: d.getFullYear() !== t.getFullYear() ? 'numeric' : undefined });
 }
 const listTime = ts => sameDay(ts, Date.now()) ? hm(ts) : new Date(ts).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+function postTime(ts) {
+  const diff = Date.now() - ts;
+  if (diff < 60e3) return 'только что';
+  if (diff < 3600e3) return Math.floor(diff / 60e3) + ' мин';
+  if (diff < 86400e3) return Math.floor(diff / 3600e3) + ' ч';
+  const d = new Date(ts);
+  return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: d.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined });
+}
 function lastSeenText(u) {
   if (u.online) return 'в сети';
   if (!u.last_seen) return 'был(а) давно';
@@ -227,6 +424,7 @@ function setAva(node, u, online) {
   node.style.background = COLORS[u.id % COLORS.length];
   node.classList.toggle('on', !!online);
 }
+function autosize(t, max) { t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, max) + 'px'; }
 
 let connTimer = 0;
 function showConn(text) { // с задержкой, чтобы не мигать при быстром переподключении
@@ -282,9 +480,9 @@ $('authForm').onsubmit = async e => {
 async function logout(callServer = true) {
   if (callServer && S.token) await api('/api/logout', { method: 'POST', noLogout: true }).catch(() => {});
   store('dio_token', null);
+  location.hash = '';
   location.reload();
 }
-$('logout').onclick = () => { if (confirm('Выйти из аккаунта?')) logout(true); };
 
 async function start() {
   $('auth').classList.add('hidden');
@@ -297,11 +495,350 @@ async function start() {
   renderMe();
   connect();
   loadChats();
+  route();
 }
 
 function renderMe() {
-  $('meName').textContent = S.me.name;
-  setAva($('meAva'), S.me, false);
+  setAva($('navAva'), S.me, false);
+  setAva($('postAva'), S.me, false);
+}
+
+// ================= Навигация (адреса вида #/feed, #/messages/12, #/u/login) =================
+function go(path) { location.hash = '#/' + path; }
+addEventListener('hashchange', () => { navDepth++; route(); });
+
+function route() {
+  if (!S.me) return;
+  const [a, b] = location.hash.replace(/^#\/?/, '').split('/');
+  if (a === 'messages') showMessages(b ? Number(b) : 0);
+  else if (a === 'u' && b) showProfile(decodeURIComponent(b));
+  else showFeed();
+}
+
+function setView(name, navKey) {
+  S.view = name;
+  $('vFeed').classList.toggle('on', name === 'feed');
+  $('vMessages').classList.toggle('on', name === 'messages');
+  $('vProfile').classList.toggle('on', name === 'profile');
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('on', b.dataset.go === navKey));
+  if (name !== 'messages') leaveChat();
+}
+
+document.querySelectorAll('.nav-btn').forEach(b => b.onclick = () => {
+  const target = b.dataset.go;
+  if (target === 'feed' && S.view === 'feed') { // повторное нажатие — наверх и показать новые посты
+    if (S.freshCount) showFresh(); else $('vFeed').scrollTo({ top: 0, behavior: 'smooth' });
+    return;
+  }
+  go(target === 'me' ? 'u/' + encodeURIComponent(S.me.username) : target);
+});
+
+// ================= Лента =================
+function showFeed() {
+  setView('feed', 'feed');
+  if (!FEED.loadedOnce) { FEED.loadedOnce = true; loadList(FEED, true); }
+}
+
+document.querySelectorAll('.ftabs button').forEach(b => b.onclick = () => {
+  if (S.scope === b.dataset.scope) return;
+  S.scope = b.dataset.scope;
+  document.querySelectorAll('.ftabs button').forEach(x => x.classList.toggle('on', x === b));
+  S.freshCount = 0; updateFresh();
+  loadList(FEED, true);
+});
+
+$('newPosts').onclick = showFresh;
+function showFresh() {
+  S.freshCount = 0; updateFresh();
+  $('vFeed').scrollTo({ top: 0 });
+  loadList(FEED, true);
+}
+function updateFresh() {
+  const n = S.freshCount;
+  $('newPosts').classList.toggle('hidden', !n);
+  $('newPosts').textContent = S.scope === 'all' ? `↑ Новые посты: ${n}` : '↑ Есть новые посты';
+}
+
+// Новый пост
+$('postInput').addEventListener('input', () => { autosize($('postInput'), 320); updateCounter(); });
+$('postInput').addEventListener('keydown', e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) publish(); });
+$('postBtn').onclick = publish;
+function updateCounter() {
+  const n = $('postInput').value.trim().length;
+  const left = POST_MAX - n;
+  $('postCount').textContent = left < 500 ? left : '';
+  $('postCount').classList.toggle('over', left < 0);
+  $('postBtn').disabled = !n || left < 0;
+}
+async function publish() {
+  const body = $('postInput').value.trim();
+  if (!body || body.length > POST_MAX) return;
+  $('postBtn').disabled = true;
+  try {
+    const p = await api('/api/posts', { method: 'POST', body: { body } });
+    $('postInput').value = '';
+    autosize($('postInput'), 320);
+    cachePost(p);
+    prependPost(FEED, p);
+    if (S.prof && S.prof.id === S.me.id) { prependPost(PROF, p); S.prof.posts++; renderProfile(); }
+  } catch (e) { alert(e.message); }
+  updateCounter();
+}
+
+// --- списки постов ---
+function cachePost(p) { S.posts.set(p.id, p); }
+
+async function loadList(L, reset) {
+  if (reset) {
+    L.gen++; L.ids = []; L.more = true; L.busy = false; L.error = false;
+    $(L.box).replaceChildren();
+  }
+  if (L.busy || !L.more) return updateLoader(L);
+  const gen = L.gen;
+  L.busy = true; L.error = false;
+  updateLoader(L);
+  const last = L.ids[L.ids.length - 1];
+  try {
+    const r = await api(L.url() + (last ? '&before=' + last : ''));
+    if (gen !== L.gen) return; // пока грузили, список сбросили (сменили вкладку/профиль)
+    for (const p of r.posts) {
+      cachePost(p);
+      if (L.ids.includes(p.id)) continue;
+      L.ids.push(p.id);
+      $(L.box).append(postNode(p));
+    }
+    L.more = r.more;
+  } catch {
+    if (gen === L.gen) L.error = true;
+  } finally {
+    if (gen === L.gen) {
+      L.busy = false;
+      updateLoader(L);
+      if (L.more && !L.error && nearScreen($(L.loader))) loadList(L); // экран ещё не заполнен — догружаем
+    }
+  }
+}
+
+function updateLoader(L) {
+  const n = $(L.loader);
+  if (L.busy) n.textContent = 'Загрузка…';
+  else if (L.error) n.textContent = 'Не удалось загрузить. Прокрутите, чтобы повторить';
+  else if (!L.more && !L.ids.length) n.textContent = L.empty();
+  else n.textContent = '';
+}
+
+function nearScreen(node) {
+  if (!node.offsetParent) return false;
+  return node.getBoundingClientRect().top < innerHeight + 600;
+}
+
+// Подгрузка при прокрутке
+const io = new IntersectionObserver(entries => {
+  for (const e of entries) {
+    if (!e.isIntersecting) continue;
+    const L = e.target.id === 'feedMore' ? FEED : PROF;
+    L.error = false;
+    loadList(L);
+  }
+}, { rootMargin: '600px' });
+io.observe($('feedMore'));
+io.observe($('profMore'));
+
+function prependPost(L, p) {
+  if (L.ids.includes(p.id)) return;
+  L.ids.unshift(p.id);
+  $(L.box).prepend(postNode(p));
+  updateLoader(L);
+}
+
+function postNode(p) {
+  const art = el('article', 'post');
+  art.dataset.post = p.id;
+  const openAuthor = () => go('u/' + encodeURIComponent(p.author.username));
+  const ava = el('div', 'ava');
+  setAva(ava, p.author, false);
+  ava.onclick = openAuthor;
+  const main = el('div', 'post-main');
+  const head = el('div', 'post-head');
+  const name = el('span', 'post-name', p.author.name);
+  name.onclick = openAuthor;
+  head.append(name, el('span', 'post-sub', '@' + p.author.username + ' · ' + postTime(p.created)));
+  if (p.author.id === S.me.id) {
+    const del = el('button', 'post-del');
+    del.title = 'Удалить';
+    del.innerHTML = ICON.trash;
+    del.onclick = () => deletePost(p.id);
+    head.append(del);
+  }
+  const acts = el('div', 'post-actions');
+  const like = el('button', 'act like');
+  like.innerHTML = ICON.heart;
+  like.append(el('span', 'n'));
+  like.onclick = () => toggleLike(p.id);
+  acts.append(like);
+  main.append(head, el('div', 'post-body', p.body), acts);
+  art.append(ava, main);
+  paintLike(art, p);
+  return art;
+}
+
+function paintLike(node, p) {
+  const like = node.querySelector('.like');
+  like.classList.toggle('liked', p.liked);
+  like.title = p.liked ? 'Убрать лайк' : 'Нравится';
+  like.querySelector('.n').textContent = p.likes > 0 ? p.likes : '';
+}
+function repaintPost(id) {
+  const p = S.posts.get(id);
+  if (p) document.querySelectorAll(`[data-post="${id}"]`).forEach(n => paintLike(n, p));
+}
+
+async function toggleLike(id) {
+  const p = S.posts.get(id);
+  if (!p) return;
+  const on = !p.liked;
+  p.liked = on; p.likes += on ? 1 : -1; // оптимистично, сразу
+  repaintPost(id);
+  try {
+    const r = await api('/api/posts/like', { method: 'POST', body: { post_id: id, on } });
+    p.likes = r.likes; p.liked = r.liked;
+  } catch {
+    p.liked = !on; p.likes += on ? -1 : 1;
+  }
+  repaintPost(id);
+}
+
+async function deletePost(id) {
+  if (!confirm('Удалить пост?')) return;
+  try {
+    await api('/api/posts/delete', { method: 'POST', body: { id } });
+    removePost(id);
+  } catch (e) { alert(e.message); }
+}
+
+function removePost(id) {
+  const p = S.posts.get(id);
+  S.posts.delete(id);
+  for (const L of [FEED, PROF]) {
+    const i = L.ids.indexOf(id);
+    if (i >= 0) { L.ids.splice(i, 1); updateLoader(L); }
+  }
+  document.querySelectorAll(`[data-post="${id}"]`).forEach(n => n.remove());
+  if (p && S.prof && S.prof.id === p.author.id && S.prof.posts > 0) { S.prof.posts--; renderProfile(); }
+}
+
+// Пост пришёл по WebSocket
+function onNewPost(p) {
+  if (S.posts.has(p.id)) return; // свой пост уже добавлен после публикации
+  cachePost(p);
+  if (p.author.id === S.me.id) prependPost(FEED, p); // свой пост с другого устройства
+  else if (FEED.loadedOnce) { S.freshCount++; updateFresh(); }
+  if (S.prof && S.prof.id === p.author.id) { prependPost(PROF, p); S.prof.posts++; renderProfile(); }
+}
+
+// ================= Профиль =================
+async function showProfile(username) {
+  const mine = sameUser(username, S.me.username);
+  setView('profile', mine ? 'me' : '');
+  $('profBack').classList.toggle('hidden', mine || navDepth === 0);
+  $('profTitle').textContent = mine ? 'Мой профиль' : 'Профиль';
+  const req = ++S.profReq;
+  const same = S.prof && sameUser(S.prof.username, username);
+  if (!same) {
+    S.prof = null;
+    PROF.gen++; PROF.ids = []; PROF.more = false; PROF.busy = false;
+    $('profList').replaceChildren();
+    $('profMore').textContent = '';
+    $('profHead').replaceChildren(el('div', 'loader', 'Загрузка…'));
+    $('vProfile').scrollTop = 0;
+  }
+  try {
+    const u = await api('/api/profile?u=' + encodeURIComponent(username));
+    if (req !== S.profReq) return;
+    S.prof = u;
+    renderProfile();
+    if (!same) loadList(PROF, true);
+  } catch (e) {
+    if (req === S.profReq) $('profHead').replaceChildren(el('div', 'empty', e.message));
+  }
+}
+$('profBack').onclick = () => history.back();
+
+function renderProfile() {
+  const u = S.prof;
+  if (!u) return;
+  const me = u.id === S.me.id;
+  const box = $('profHead');
+  box.replaceChildren();
+  const top = el('div', 'prof-top');
+  const ava = el('div', 'ava big');
+  setAva(ava, u, !me && u.online);
+  const btns = el('div', 'prof-btns');
+  if (me) {
+    const edit = el('button', 'btn small ghost', 'Редактировать');
+    edit.onclick = editProfile;
+    const out = el('button', 'btn small ghost', 'Выйти');
+    out.onclick = () => { if (confirm('Выйти из аккаунта?')) logout(true); };
+    btns.append(edit, out);
+  } else {
+    const fol = el('button', 'btn small' + (u.i_follow ? ' ghost' : ''), u.i_follow ? 'Вы подписаны' : 'Подписаться');
+    fol.onclick = () => toggleFollow(fol);
+    const msg = el('button', 'btn small ghost', 'Написать');
+    msg.onclick = () => startChat(u.id);
+    btns.append(fol, msg);
+  }
+  top.append(ava, btns);
+  box.append(top,
+    el('div', 'prof-name', u.name),
+    el('div', 'prof-user', '@' + u.username + (me ? '' : ' · ' + lastSeenText(u))));
+  if (u.bio) box.append(el('div', 'prof-bio', u.bio));
+  const stats = el('div', 'prof-stats');
+  const stat = (n, forms) => { const s = el('span'); s.append(el('b', null, n), ' ' + plural(n, forms)); return s; };
+  stats.append(
+    stat(u.posts, ['пост', 'поста', 'постов']),
+    stat(u.followers, ['подписчик', 'подписчика', 'подписчиков']),
+    stat(u.following, ['подписка', 'подписки', 'подписок']));
+  box.append(stats);
+}
+
+function editProfile() {
+  const u = S.prof, box = $('profHead');
+  box.replaceChildren();
+  const name = el('input', 'field');
+  name.value = u.name; name.maxLength = 64; name.placeholder = 'Имя';
+  const bio = el('textarea', 'field');
+  bio.value = u.bio || ''; bio.maxLength = 300; bio.rows = 3; bio.placeholder = 'О себе';
+  const err = el('div', 'err');
+  const save = el('button', 'btn small', 'Сохранить');
+  const cancel = el('button', 'btn small ghost', 'Отмена');
+  cancel.onclick = renderProfile;
+  save.onclick = async () => {
+    save.disabled = true;
+    try {
+      const r = await api('/api/me', { method: 'POST', body: { name: name.value.trim(), bio: bio.value.trim() } });
+      u.name = r.name; u.bio = r.bio || '';
+      S.me.name = r.name; S.me.bio = r.bio;
+      renderMe();
+      renderProfile();
+    } catch (e) { err.textContent = e.message; save.disabled = false; }
+  };
+  const row = el('div', 'prof-btns');
+  row.style.justifyContent = 'flex-start';
+  row.append(save, cancel);
+  box.append(el('div', 'prof-name', 'Редактирование'), el('div', 'prof-user', '@' + u.username), el('div', null, ' '), name, bio, row, err);
+  name.focus();
+}
+
+async function toggleFollow(btn) {
+  const u = S.prof;
+  btn.disabled = true;
+  try {
+    const r = await api('/api/follow', { method: 'POST', body: { user_id: u.id, on: !u.i_follow } });
+    u.i_follow = r.following;
+    u.followers = r.followers;
+    if (S.scope === 'following') FEED.loadedOnce = false; // лента подписок изменилась — перезагрузим при входе
+  } catch (e) { alert(e.message); }
+  if (S.prof === u) renderProfile();
 }
 
 // ================= WebSocket =================
@@ -354,12 +891,12 @@ function reconnectNow() {
   if (!S.token || !S.me) return;
   if (!S.ws || S.ws.readyState > WebSocket.OPEN) { S.retry = 0; connect(); }
 }
-window.addEventListener('online', reconnectNow);
+addEventListener('online', reconnectNow);
 
 function onEvent(ev) {
   switch (ev.t) {
     case 'ready':
-      S.me = ev.user; renderMe();
+      S.me = Object.assign(S.me || {}, ev.user); renderMe();
       S.retry = 0; hideConn(); startPing();
       for (const p of S.pending.values()) dispatchPending(p); // переотправка (сервер отсеет дубли по cid)
       resync();
@@ -388,6 +925,13 @@ function onEvent(ev) {
     case 'chat':
       if (!S.chats.has(ev.chat.id)) { S.chats.set(ev.chat.id, ev.chat); renderList(); }
       break;
+    case 'post': onNewPost(ev.post); break;
+    case 'post_del': removePost(ev.p); break;
+    case 'likes': {
+      const p = S.posts.get(ev.p);
+      if (p) { p.likes = ev.n; repaintPost(ev.p); }
+      break;
+    }
   }
 }
 
@@ -408,20 +952,35 @@ async function resync() {
   markRead();
 }
 
-// ================= Список чатов =================
+// ================= Сообщения: список чатов =================
 async function loadChats() {
   try {
     const list = await api('/api/chats');
     S.chats = new Map(list.map(c => [c.id, c]));
+    S.chatsLoaded = true;
     renderList();
     renderHead();
+    // если открыли ссылку на чат до того, как загрузился список
+    const want = chatFromHash();
+    if (S.view === 'messages' && want && S.current !== want && S.chats.has(want)) openChat(want);
   } catch {}
+}
+
+function chatFromHash() {
+  const m = location.hash.match(/^#\/messages\/(\d+)/);
+  return m ? Number(m[1]) : 0;
+}
+
+function showMessages(chatId) {
+  setView('messages', 'messages');
+  if (chatId && S.chats.has(chatId)) { if (S.current !== chatId) openChat(chatId); }
+  else if (!chatId || S.chatsLoaded) closeChat();
 }
 
 const chatTime = c => c.last ? c.last.created : (c._t || 0);
 
 function renderList() {
-  updateTitle();
+  updateUnread();
   if (searchMode) return; // сейчас на экране результаты поиска
   const list = $('list');
   list.replaceChildren();
@@ -447,17 +1006,19 @@ function chatItem(c) {
   if (c.unread > 0) r2.append(el('div', 'badge', c.unread > 99 ? '99+' : c.unread));
   meta.append(r1, r2);
   it.append(ava, meta);
-  it.onclick = () => openChat(c.id);
+  it.onclick = () => go('messages/' + c.id);
   return it;
 }
 
-function updateTitle() {
+function updateUnread() {
   let n = 0;
   for (const c of S.chats.values()) n += c.unread || 0;
   document.title = n ? `(${n}) dio` : 'dio';
+  $('navBadge').textContent = n > 99 ? '99+' : n;
+  $('navBadge').classList.toggle('hidden', !n);
 }
 
-// ================= Поиск людей =================
+// ================= Сообщения: поиск людей =================
 $('search').oninput = () => {
   clearTimeout(searchTimer);
   const q = $('search').value.trim();
@@ -491,16 +1052,14 @@ async function startChat(userId) {
     $('search').value = '';
     searchMode = false;
     renderList();
-    openChat(c.id);
+    go('messages/' + c.id);
   } catch (e) { alert(e.message); }
 }
 
-// ================= Открытый чат =================
+// ================= Сообщения: открытый чат =================
 async function openChat(id) {
   const c = S.chats.get(id);
   if (!c) return;
-  // На телефоне/в приложении кнопка «назад» должна закрывать чат, а не сайт
-  if (isMobile() && !document.body.classList.contains('in-chat')) history.pushState({ chat: id }, '');
   S.current = id;
   S.lastTypingSent = 0;
   document.body.classList.add('in-chat');
@@ -522,18 +1081,24 @@ async function openChat(id) {
     if (S.current === id) renderMsgs(true);
   }
   markRead();
-  if (!isMobile()) $('input').focus();
+  if (DEVICE === 'pc') $('input').focus();
 }
 
 function closeChat() {
-  document.body.classList.remove('in-chat');
-  S.current = 0;
+  leaveChat();
   $('chat').classList.add('hidden');
   $('placeholder').classList.remove('hidden');
   renderList();
 }
-$('back').onclick = () => history.state && history.state.chat ? history.back() : closeChat();
-window.addEventListener('popstate', () => { if (document.body.classList.contains('in-chat')) closeChat(); });
+function leaveChat() {
+  S.current = 0;
+  document.body.classList.remove('in-chat');
+}
+// «Назад» из чата: если пришли из списка — шаг назад по истории (работает и системная кнопка Android)
+$('back').onclick = () => navDepth > 0 ? history.back() : go('messages');
+const openPeer = () => { const c = S.chats.get(S.current); if (c) go('u/' + encodeURIComponent(c.peer.username)); };
+$('peerAva').onclick = openPeer;
+$('peerName').onclick = openPeer;
 
 function renderHead() {
   const c = S.chats.get(S.current);
@@ -619,13 +1184,12 @@ function addMessage(m) {
   renderList();
 }
 
-// ================= Отправка =================
+// ================= Сообщения: отправка =================
 $('composer').onsubmit = e => { e.preventDefault(); sendMsg(); };
 $('input').addEventListener('keydown', e => {
-  if (e.key === 'Enter' && !e.shiftKey && !isMobile()) { e.preventDefault(); sendMsg(); }
+  if (e.key === 'Enter' && !e.shiftKey && DEVICE === 'pc') { e.preventDefault(); sendMsg(); }
 });
-$('input').addEventListener('input', () => { autosize(); notifyTyping(); });
-function autosize() { const t = $('input'); t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 160) + 'px'; }
+$('input').addEventListener('input', () => { autosize($('input'), 160); notifyTyping(); });
 
 function sendMsg() {
   const body = $('input').value.trim();
@@ -634,11 +1198,11 @@ function sendMsg() {
   const p = { cid: newCid(), chat_id: S.current, user_id: S.me.id, body, created: Date.now(), pending: true };
   S.pending.set(p.cid, p);
   $('input').value = '';
-  autosize();
+  autosize($('input'), 160);
   S.lastTypingSent = 0;
   dispatchPending(p);
   renderMsgs(true);
-  if (isMobile()) $('input').focus();
+  if (DEVICE === 'phone') $('input').focus();
 }
 
 function dispatchPending(p) {
@@ -710,6 +1274,11 @@ function onPresence(ev) {
     c.peer.online = ev.online;
     if (ev.last_seen) c.peer.last_seen = ev.last_seen;
   }
+  if (S.prof && S.prof.id === ev.u) {
+    S.prof.online = ev.online;
+    if (ev.last_seen) S.prof.last_seen = ev.last_seen;
+    if ($('profHead').querySelector('.prof-top')) renderProfile(); // не сбиваем форму редактирования
+  }
   renderList();
   renderHead();
 }
@@ -719,7 +1288,7 @@ function notify(c, m) {
   if (!('Notification' in window) || Notification.permission !== 'granted') return;
   try {
     const n = new Notification(c.peer.name, { body: m.body.slice(0, 120), tag: 'dio-' + c.id });
-    n.onclick = () => { window.focus(); openChat(c.id); n.close(); };
+    n.onclick = () => { window.focus(); go('messages/' + c.id); n.close(); };
   } catch {}
 }
 document.addEventListener('click', () => {
@@ -731,7 +1300,7 @@ document.addEventListener('visibilitychange', () => {
   markRead();
   reconnectNow();
 });
-window.addEventListener('focus', markRead);
+addEventListener('focus', markRead);
 
 // ================= Старт =================
 if (S.token) start();
