@@ -1,0 +1,741 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<meta name="theme-color" content="#0f1115">
+<title>dio</title>
+<style>
+:root {
+  --bg:#0f1115; --panel:#161a21; --panel2:#1d222b; --line:#262c37;
+  --text:#e8ebf0; --muted:#8a93a3; --accent:#5b8cff;
+  --mine:#2b4a8f; --theirs:#1f252f; --danger:#ff6b6b; --ok:#3ecf8e;
+}
+* { box-sizing:border-box; margin:0; padding:0 }
+html, body { height:100% }
+body { background:var(--bg); color:var(--text); font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; overflow:hidden; -webkit-tap-highlight-color:transparent; -webkit-text-size-adjust:100% }
+button { font:inherit; cursor:pointer; border:0; background:none; color:inherit }
+input, textarea { font:inherit; color:inherit }
+svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round }
+.hidden { display:none !important }
+
+/* ---------- вход ---------- */
+#auth { height:100dvh; display:grid; place-items:center; padding:16px }
+.card { width:100%; max-width:360px; background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:28px 24px }
+.logo { font-size:36px; font-weight:800; letter-spacing:-1px; text-align:center }
+.logo span { color:var(--accent) }
+.sub { text-align:center; color:var(--muted); margin-bottom:20px; font-size:13px }
+.tabs { display:flex; background:var(--panel2); border-radius:10px; padding:3px; margin-bottom:16px }
+.tabs button { flex:1; padding:8px; border-radius:8px; color:var(--muted) }
+.tabs button.on { background:var(--line); color:var(--text) }
+.field { width:100%; padding:11px 12px; background:var(--panel2); border:1px solid var(--line); border-radius:10px; margin-bottom:10px; outline:none }
+.field:focus { border-color:var(--accent) }
+.btn { width:100%; padding:11px; background:var(--accent); color:#fff; border-radius:10px; font-weight:600 }
+.btn:disabled { opacity:.6 }
+.err { color:var(--danger); font-size:13px; min-height:18px; margin-top:8px; text-align:center }
+
+/* ---------- приложение ---------- */
+#app { height:100dvh; display:flex; padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left) }
+#side { width:340px; flex-shrink:0; border-right:1px solid var(--line); display:flex; flex-direction:column; background:var(--panel) }
+.side-head { display:flex; align-items:center; gap:10px; padding:12px }
+.me-name { flex:1; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
+.icon-btn { width:38px; height:38px; border-radius:50%; display:grid; place-items:center; color:var(--muted); flex-shrink:0 }
+.icon-btn:hover { background:var(--panel2); color:var(--text) }
+.field.search { width:auto; margin:0 12px 8px }
+#list { flex:1; overflow-y:auto }
+.item { display:flex; gap:12px; padding:10px 12px; cursor:pointer; align-items:center }
+.item:hover { background:var(--panel2) }
+.item.on { background:var(--line) }
+.ava { width:46px; height:46px; border-radius:50%; flex-shrink:0; display:grid; place-items:center; font-weight:700; color:#fff; position:relative; font-size:17px; user-select:none }
+.ava.on::after { content:""; position:absolute; right:0; bottom:0; width:12px; height:12px; border-radius:50%; background:var(--ok); border:2px solid var(--panel) }
+.meta { flex:1; min-width:0 }
+.row { display:flex; justify-content:space-between; gap:8px; align-items:center }
+.title { font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
+.time { color:var(--muted); font-size:12px; flex-shrink:0 }
+.prev { color:var(--muted); font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1 }
+.prev.typing { color:var(--accent) }
+.badge { background:var(--accent); color:#fff; border-radius:10px; font-size:12px; padding:1px 7px; font-weight:600; flex-shrink:0 }
+.empty { color:var(--muted); text-align:center; padding:24px 16px; font-size:14px }
+.section { color:var(--muted); font-size:12px; padding:8px 12px 4px; text-transform:uppercase; letter-spacing:.5px }
+
+#main { flex:1; display:flex; flex-direction:column; min-width:0 }
+#placeholder { flex:1; display:grid; place-items:center; color:var(--muted); padding:16px; text-align:center }
+#chat { flex:1; display:flex; flex-direction:column; min-height:0 }
+.chat-head { display:flex; align-items:center; gap:10px; padding:8px 12px; border-bottom:1px solid var(--line); background:var(--panel); min-height:58px }
+.chat-head .ava { width:38px; height:38px; font-size:15px }
+.chat-head .ava.on::after { border-color:var(--panel) }
+#back { display:none }
+.status { color:var(--muted); font-size:13px }
+.status.online, .status.typing { color:var(--accent) }
+#msgs { flex:1; overflow-y:auto; padding:12px 12px 6px; display:flex; flex-direction:column; gap:3px; overscroll-behavior:contain }
+.day { align-self:center; color:var(--muted); font-size:12px; background:var(--panel2); padding:3px 10px; border-radius:10px; margin:10px 0 6px }
+.msg { max-width:min(75%, 560px); padding:7px 10px 5px; border-radius:14px; background:var(--theirs); align-self:flex-start; white-space:pre-wrap; overflow-wrap:anywhere }
+.msg.mine { background:var(--mine); align-self:flex-end }
+.msg .info { float:right; margin:6px 0 -3px 10px; font-size:11px; color:rgba(255,255,255,.55); display:inline-flex; gap:3px; align-items:center; white-space:nowrap }
+.tick.read { color:#9fc0ff }
+.msg.pending { opacity:.75 }
+.msg.failed { cursor:pointer }
+.msg.failed .info { color:var(--danger) }
+#composer { display:flex; gap:8px; padding:8px 12px 12px; align-items:flex-end; border-top:1px solid var(--line); background:var(--panel) }
+#input { flex:1; resize:none; max-height:160px; padding:10px 14px; border-radius:20px; background:var(--panel2); border:1px solid var(--line); outline:none; line-height:1.35 }
+#input:focus { border-color:var(--accent) }
+#send { width:42px; height:42px; border-radius:50%; background:var(--accent); color:#fff; display:grid; place-items:center; flex-shrink:0 }
+#conn { position:fixed; top:calc(10px + env(safe-area-inset-top)); left:50%; transform:translateX(-50%); background:var(--panel2); border:1px solid var(--line); padding:6px 14px; border-radius:20px; font-size:13px; color:var(--muted); z-index:10; white-space:nowrap }
+
+/* телефон и приложение-обёртка: показываем либо список, либо чат */
+@media (max-width:720px) {
+  #side { width:100%; border-right:0 }
+  #main { display:none }
+  body.in-chat #side { display:none }
+  body.in-chat #main { display:flex }
+  #back { display:grid }
+  .msg { max-width:85% }
+}
+</style>
+</head>
+<body>
+
+<div id="conn" class="hidden"></div>
+
+<section id="auth" class="hidden">
+  <form class="card" id="authForm">
+    <div class="logo">di<span>o</span></div>
+    <div class="sub">мессенджер</div>
+    <div class="tabs">
+      <button type="button" data-mode="login" class="on">Вход</button>
+      <button type="button" data-mode="register">Регистрация</button>
+    </div>
+    <input class="field" id="fUser" placeholder="Логин" autocomplete="username" autocapitalize="off" spellcheck="false" required>
+    <input class="field hidden" id="fName" placeholder="Имя (его видят другие)" autocomplete="nickname">
+    <input class="field" id="fPass" type="password" placeholder="Пароль" autocomplete="current-password" required>
+    <button class="btn" id="fBtn">Войти</button>
+    <div class="err" id="fErr"></div>
+  </form>
+</section>
+
+<section id="app" class="hidden">
+  <aside id="side">
+    <div class="side-head">
+      <div class="ava" id="meAva"></div>
+      <div class="me-name" id="meName"></div>
+      <button class="icon-btn" id="logout" title="Выйти">
+        <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+      </button>
+    </div>
+    <input class="field search" id="search" placeholder="Найти по логину или имени" autocomplete="off" autocapitalize="off" spellcheck="false">
+    <div id="list"></div>
+  </aside>
+
+  <main id="main">
+    <div id="placeholder">Выберите чат или найдите собеседника через поиск</div>
+    <div id="chat" class="hidden">
+      <div class="chat-head">
+        <button class="icon-btn" id="back" title="Назад">
+          <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <div class="ava" id="peerAva"></div>
+        <div class="meta">
+          <div class="title" id="peerName"></div>
+          <div class="status" id="peerStatus"></div>
+        </div>
+      </div>
+      <div id="msgs"></div>
+      <form id="composer">
+        <textarea id="input" rows="1" placeholder="Сообщение" maxlength="4000"></textarea>
+        <button id="send" title="Отправить">
+          <svg viewBox="0 0 24 24"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+        </button>
+      </form>
+    </div>
+  </main>
+</section>
+
+<script>
+'use strict';
+
+// ================= Настройки =================
+// Адрес сервера на Amvera (поменяй на свой после деплоя).
+const PROD_SERVER = 'https://ИМЯ-ПРОЕКТА.amvera.io';
+const IS_LOCAL = ['localhost', '127.0.0.1', ''].includes(location.hostname);
+// Для отладки адрес можно переопределить: localStorage.dio_server = 'http://...'
+const SERVER = (store('dio_server') || (IS_LOCAL ? 'http://localhost:8080' : PROD_SERVER)).replace(/\/$/, '');
+const WS_URL = SERVER.replace(/^http/, 'ws') + '/ws';
+
+const TYPING_SEND_EVERY = 3000; // не чаще раза в 3 с шлём «печатает»
+const TYPING_SHOW_FOR = 5000;   // индикатор гаснет сам, если сигналы прекратились
+const PING_EVERY = 20000;       // проверка, что соединение живое
+const PONG_WAIT = 8000;
+const SEND_TIMEOUT = 10000;     // нет подтверждения — помечаем сообщение «не отправлено»
+
+// ================= Состояние =================
+const S = {
+  token: store('dio_token'),
+  me: null,
+  chats: new Map(),   // id -> чат
+  msgs: new Map(),    // id чата -> { list, more, loaded, busy }
+  pending: new Map(), // cid -> сообщение, ещё не подтверждённое сервером
+  typing: new Map(),  // id чата -> таймер индикатора «печатает»
+  current: 0,
+  ws: null, retry: 0, reconnectTimer: 0, pingTimer: 0, pongTimer: 0,
+  lastTypingSent: 0,
+};
+let searchMode = false, searchTimer = 0, authMode = 'login';
+
+// ================= Утилиты =================
+function store(k, v) {
+  try {
+    if (arguments.length === 1) return localStorage.getItem(k);
+    v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v);
+  } catch { return null; }
+}
+const $ = id => document.getElementById(id);
+function el(tag, cls, text) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text != null) e.textContent = text; // только textContent — защита от XSS
+  return e;
+}
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const isMobile = () => matchMedia('(max-width:720px)').matches;
+const newCid = () => crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2);
+
+const pad = n => String(n).padStart(2, '0');
+const hm = ts => { const d = new Date(ts); return pad(d.getHours()) + ':' + pad(d.getMinutes()); };
+const sameDay = (a, b) => new Date(a).toDateString() === new Date(b).toDateString();
+function dayLabel(ts) {
+  const t = new Date();
+  if (sameDay(ts, t)) return 'Сегодня';
+  const y = new Date(t); y.setDate(t.getDate() - 1);
+  if (sameDay(ts, y)) return 'Вчера';
+  const d = new Date(ts);
+  return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: d.getFullYear() !== t.getFullYear() ? 'numeric' : undefined });
+}
+const listTime = ts => sameDay(ts, Date.now()) ? hm(ts) : new Date(ts).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+function lastSeenText(u) {
+  if (u.online) return 'в сети';
+  if (!u.last_seen) return 'был(а) давно';
+  const diff = Date.now() - u.last_seen;
+  if (diff < 60e3) return 'был(а) только что';
+  if (diff < 3600e3) return `был(а) ${Math.floor(diff / 60e3)} мин. назад`;
+  if (sameDay(u.last_seen, Date.now())) return 'был(а) в ' + hm(u.last_seen);
+  return 'был(а) ' + dayLabel(u.last_seen).toLowerCase() + ' в ' + hm(u.last_seen);
+}
+
+const COLORS = ['#e17076', '#7bc862', '#e5ca77', '#65aadd', '#a695e7', '#ee7aae', '#6ec9cb', '#faa774'];
+function setAva(node, u, online) {
+  node.textContent = ((u.name || u.username || '?').trim()[0] || '?').toUpperCase();
+  node.style.background = COLORS[u.id % COLORS.length];
+  node.classList.toggle('on', !!online);
+}
+
+let connTimer = 0;
+function showConn(text) { // с задержкой, чтобы не мигать при быстром переподключении
+  clearTimeout(connTimer);
+  connTimer = setTimeout(() => { $('conn').textContent = text; $('conn').classList.remove('hidden'); }, 700);
+}
+function hideConn() { clearTimeout(connTimer); $('conn').classList.add('hidden'); }
+
+// ================= HTTP API =================
+async function api(path, opts = {}) {
+  const headers = {};
+  if (opts.body) headers['Content-Type'] = 'application/json';
+  if (S.token) headers.Authorization = 'Bearer ' + S.token;
+  const res = await fetch(SERVER + path, {
+    method: opts.method || 'GET', headers,
+    body: opts.body ? JSON.stringify(opts.body) : undefined,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (res.status === 401 && S.token && !opts.noLogout) logout(false);
+  if (!res.ok) throw new Error(data.error || 'Ошибка ' + res.status);
+  return data;
+}
+
+// ================= Вход =================
+document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => {
+  authMode = b.dataset.mode;
+  document.querySelectorAll('.tabs button').forEach(x => x.classList.toggle('on', x === b));
+  $('fName').classList.toggle('hidden', authMode !== 'register');
+  $('fBtn').textContent = authMode === 'login' ? 'Войти' : 'Создать аккаунт';
+  $('fPass').autocomplete = authMode === 'login' ? 'current-password' : 'new-password';
+  $('fErr').textContent = '';
+});
+
+$('authForm').onsubmit = async e => {
+  e.preventDefault();
+  $('fBtn').disabled = true;
+  $('fErr').textContent = '';
+  try {
+    const body = { username: $('fUser').value.trim(), password: $('fPass').value };
+    if (authMode === 'register') body.name = $('fName').value.trim();
+    const r = await api('/api/' + authMode, { method: 'POST', body });
+    S.token = r.token; store('dio_token', r.token);
+    S.me = r.user;
+    $('fPass').value = '';
+    start();
+  } catch (err) {
+    $('fErr').textContent = err instanceof TypeError ? 'Сервер недоступен' : err.message;
+  } finally {
+    $('fBtn').disabled = false;
+  }
+};
+
+async function logout(callServer = true) {
+  if (callServer && S.token) await api('/api/logout', { method: 'POST', noLogout: true }).catch(() => {});
+  store('dio_token', null);
+  location.reload();
+}
+$('logout').onclick = () => { if (confirm('Выйти из аккаунта?')) logout(true); };
+
+async function start() {
+  $('auth').classList.add('hidden');
+  $('app').classList.remove('hidden');
+  while (!S.me) {
+    try { S.me = await api('/api/me'); }
+    catch (e) { if (!S.token) return; showConn('Сервер недоступен, повторяю…'); await sleep(3000); }
+  }
+  hideConn();
+  renderMe();
+  connect();
+  loadChats();
+}
+
+function renderMe() {
+  $('meName').textContent = S.me.name;
+  setAva($('meAva'), S.me, false);
+}
+
+// ================= WebSocket =================
+function connect() {
+  if (!S.token) return;
+  clearTimeout(S.reconnectTimer);
+  if (S.ws) { S.ws.onclose = S.ws.onmessage = null; try { S.ws.close(); } catch {} }
+  const ws = new WebSocket(WS_URL);
+  S.ws = ws;
+  showConn('Соединение…');
+  ws.onopen = () => ws.send(JSON.stringify({ t: 'auth', token: S.token }));
+  ws.onmessage = e => { let ev; try { ev = JSON.parse(e.data); } catch { return; } onEvent(ev); };
+  ws.onclose = () => { if (S.ws === ws) { S.ws = null; onDisconnected(); } };
+}
+
+function onDisconnected() {
+  stopPing();
+  showConn('Нет соединения, переподключаюсь…');
+  clearTimeout(S.reconnectTimer);
+  const delay = Math.min(10000, 500 * 2 ** S.retry++) + Math.random() * 300;
+  S.reconnectTimer = setTimeout(connect, delay);
+}
+
+// Соединение «зависло» (часто бывает на мобильном интернете) — рвём его сами, не дожидаясь браузера.
+function dropConnection() {
+  const ws = S.ws;
+  if (!ws) return;
+  ws.onclose = ws.onmessage = null;
+  try { ws.close(); } catch {}
+  S.ws = null;
+  onDisconnected();
+}
+
+function wsSend(obj) {
+  if (S.ws && S.ws.readyState === WebSocket.OPEN) { S.ws.send(JSON.stringify(obj)); return true; }
+  return false;
+}
+
+function startPing() {
+  stopPing();
+  S.pingTimer = setInterval(() => {
+    wsSend({ t: 'ping' });
+    clearTimeout(S.pongTimer);
+    S.pongTimer = setTimeout(dropConnection, PONG_WAIT);
+  }, PING_EVERY);
+}
+function stopPing() { clearInterval(S.pingTimer); clearTimeout(S.pongTimer); }
+
+function reconnectNow() {
+  if (!S.token || !S.me) return;
+  if (!S.ws || S.ws.readyState > WebSocket.OPEN) { S.retry = 0; connect(); }
+}
+window.addEventListener('online', reconnectNow);
+
+function onEvent(ev) {
+  switch (ev.t) {
+    case 'ready':
+      S.me = ev.user; renderMe();
+      S.retry = 0; hideConn(); startPing();
+      for (const p of S.pending.values()) dispatchPending(p); // переотправка (сервер отсеет дубли по cid)
+      resync();
+      break;
+    case 'pong':
+      clearTimeout(S.pongTimer);
+      break;
+    case 'error':
+      if (ev.error === 'auth') { logout(false); break; }
+      if (ev.cid && S.pending.has(ev.cid)) {
+        const p = S.pending.get(ev.cid);
+        clearTimeout(p.timer); p.failed = true;
+        if (S.current === p.chat_id) renderMsgs();
+      }
+      break;
+    case 'ack': {
+      const p = S.pending.get(ev.cid);
+      if (p) { clearTimeout(p.timer); S.pending.delete(ev.cid); }
+      addMessage(ev.m);
+      break;
+    }
+    case 'msg': addMessage(ev.m); break;
+    case 'typing': onTyping(ev.c, ev.u); break;
+    case 'read': onRead(ev); break;
+    case 'presence': onPresence(ev); break;
+    case 'chat':
+      if (!S.chats.has(ev.chat.id)) { S.chats.set(ev.chat.id, ev.chat); renderList(); }
+      break;
+  }
+}
+
+// После переподключения: обновляем список чатов и догружаем пропущенное в открытом чате.
+async function resync() {
+  await loadChats();
+  for (const id of [...S.msgs.keys()]) if (id !== S.current) S.msgs.delete(id);
+  const id = S.current, box = S.msgs.get(id);
+  if (box && box.loaded) {
+    const last = box.list.length ? box.list[box.list.length - 1].id : 0;
+    try {
+      const r = await api(`/api/messages?chat=${id}` + (last ? `&after=${last}` : ''));
+      box.list = mergeMsgs(box.list, r.messages);
+      if (!last) box.more = r.more;
+      if (S.current === id) renderMsgs();
+    } catch {}
+  }
+  markRead();
+}
+
+// ================= Список чатов =================
+async function loadChats() {
+  try {
+    const list = await api('/api/chats');
+    S.chats = new Map(list.map(c => [c.id, c]));
+    renderList();
+    renderHead();
+  } catch {}
+}
+
+const chatTime = c => c.last ? c.last.created : (c._t || 0);
+
+function renderList() {
+  updateTitle();
+  if (searchMode) return; // сейчас на экране результаты поиска
+  const list = $('list');
+  list.replaceChildren();
+  const chats = [...S.chats.values()].sort((a, b) => chatTime(b) - chatTime(a));
+  if (!chats.length) list.append(el('div', 'empty', 'Чатов пока нет. Найдите собеседника через поиск сверху.'));
+  for (const c of chats) list.append(chatItem(c));
+}
+
+function chatItem(c) {
+  const it = el('div', 'item' + (c.id === S.current ? ' on' : ''));
+  const ava = el('div', 'ava');
+  setAva(ava, c.peer, c.peer.online);
+  const meta = el('div', 'meta');
+  const r1 = el('div', 'row');
+  r1.append(el('div', 'title', c.peer.name));
+  if (c.last) r1.append(el('div', 'time', listTime(c.last.created)));
+  const r2 = el('div', 'row');
+  const typing = S.typing.has(c.id);
+  const text = typing ? 'печатает…'
+    : c.last ? (c.last.user_id === S.me?.id ? 'Вы: ' : '') + c.last.body.replace(/\s+/g, ' ')
+    : '@' + c.peer.username;
+  r2.append(el('div', 'prev' + (typing ? ' typing' : ''), text));
+  if (c.unread > 0) r2.append(el('div', 'badge', c.unread > 99 ? '99+' : c.unread));
+  meta.append(r1, r2);
+  it.append(ava, meta);
+  it.onclick = () => openChat(c.id);
+  return it;
+}
+
+function updateTitle() {
+  let n = 0;
+  for (const c of S.chats.values()) n += c.unread || 0;
+  document.title = n ? `(${n}) dio` : 'dio';
+}
+
+// ================= Поиск людей =================
+$('search').oninput = () => {
+  clearTimeout(searchTimer);
+  const q = $('search').value.trim();
+  if (!q) { searchMode = false; renderList(); return; }
+  searchMode = true;
+  searchTimer = setTimeout(async () => {
+    try {
+      const users = await api('/api/users?q=' + encodeURIComponent(q));
+      if ($('search').value.trim() !== q) return;
+      const list = $('list');
+      list.replaceChildren(el('div', 'section', 'Люди'));
+      if (!users.length) list.append(el('div', 'empty', 'Никого не нашли'));
+      for (const u of users) {
+        const it = el('div', 'item');
+        const ava = el('div', 'ava');
+        setAva(ava, u, u.online);
+        const meta = el('div', 'meta');
+        meta.append(el('div', 'title', u.name), el('div', 'prev', '@' + u.username));
+        it.append(ava, meta);
+        it.onclick = () => startChat(u.id);
+        list.append(it);
+      }
+    } catch {}
+  }, 250);
+};
+
+async function startChat(userId) {
+  try {
+    const c = await api('/api/chats/direct', { method: 'POST', body: { user_id: userId } });
+    if (!S.chats.has(c.id)) { c._t = Date.now(); S.chats.set(c.id, c); }
+    $('search').value = '';
+    searchMode = false;
+    renderList();
+    openChat(c.id);
+  } catch (e) { alert(e.message); }
+}
+
+// ================= Открытый чат =================
+async function openChat(id) {
+  const c = S.chats.get(id);
+  if (!c) return;
+  // На телефоне/в приложении кнопка «назад» должна закрывать чат, а не сайт
+  if (isMobile() && !document.body.classList.contains('in-chat')) history.pushState({ chat: id }, '');
+  S.current = id;
+  S.lastTypingSent = 0;
+  document.body.classList.add('in-chat');
+  $('placeholder').classList.add('hidden');
+  $('chat').classList.remove('hidden');
+  renderHead();
+  renderList();
+
+  let box = S.msgs.get(id);
+  if (!box) { box = { list: [], more: true, loaded: false, busy: false }; S.msgs.set(id, box); }
+  renderMsgs(true);
+  if (!box.loaded) {
+    try {
+      const r = await api(`/api/messages?chat=${id}`);
+      box.list = mergeMsgs(box.list, r.messages);
+      box.more = r.more;
+      box.loaded = true;
+    } catch {}
+    if (S.current === id) renderMsgs(true);
+  }
+  markRead();
+  if (!isMobile()) $('input').focus();
+}
+
+function closeChat() {
+  document.body.classList.remove('in-chat');
+  S.current = 0;
+  $('chat').classList.add('hidden');
+  $('placeholder').classList.remove('hidden');
+  renderList();
+}
+$('back').onclick = () => history.state && history.state.chat ? history.back() : closeChat();
+window.addEventListener('popstate', () => { if (document.body.classList.contains('in-chat')) closeChat(); });
+
+function renderHead() {
+  const c = S.chats.get(S.current);
+  if (!c) return;
+  setAva($('peerAva'), c.peer, c.peer.online);
+  $('peerName').textContent = c.peer.name;
+  const st = $('peerStatus');
+  if (S.typing.has(c.id)) { st.textContent = 'печатает…'; st.className = 'status typing'; }
+  else { st.textContent = lastSeenText(c.peer); st.className = 'status' + (c.peer.online ? ' online' : ''); }
+}
+setInterval(renderHead, 60000); // «был(а) N мин. назад» обновляется само
+
+function mergeMsgs(list, add) {
+  const m = new Map(list.map(x => [x.id, x]));
+  for (const x of add) m.set(x.id, x);
+  return [...m.values()].sort((a, b) => a.id - b.id);
+}
+const pendingFor = chatId => [...S.pending.values()].filter(p => p.chat_id === chatId);
+
+function renderMsgs(forceBottom = false, keepPosition = false) {
+  const c = S.chats.get(S.current);
+  if (!c) return;
+  const box = S.msgs.get(c.id) || { list: [] };
+  const wrap = $('msgs');
+  const nearBottom = wrap.scrollHeight - wrap.scrollTop - wrap.clientHeight < 80;
+  const fromBottom = wrap.scrollHeight - wrap.scrollTop;
+  const all = [...box.list, ...pendingFor(c.id)];
+
+  wrap.replaceChildren();
+  if (box.loaded && !all.length) wrap.append(el('div', 'empty', 'Сообщений пока нет. Напишите первым 👋'));
+  let lastDay = '';
+  for (const m of all) {
+    const day = new Date(m.created).toDateString();
+    if (day !== lastDay) { wrap.append(el('div', 'day', dayLabel(m.created))); lastDay = day; }
+    const mine = m.user_id === S.me.id;
+    const node = el('div', 'msg' + (mine ? ' mine' : '') + (m.pending ? ' pending' : '') + (m.failed ? ' failed' : ''), m.body);
+    const info = el('span', 'info', hm(m.created));
+    if (mine) {
+      let tick;
+      if (m.failed) tick = el('span', 'tick', '⚠ повторить');
+      else if (m.pending) tick = el('span', 'tick', '🕓');
+      else if (m.id <= c.peer_read) tick = el('span', 'tick read', '✓✓');
+      else tick = el('span', 'tick', '✓');
+      info.append(tick);
+    }
+    node.append(info);
+    if (m.failed) node.onclick = () => dispatchPending(m);
+    wrap.append(node);
+  }
+  if (keepPosition) wrap.scrollTop = wrap.scrollHeight - fromBottom;
+  else if (forceBottom || nearBottom) wrap.scrollTop = wrap.scrollHeight;
+}
+
+// Подгрузка старых сообщений при прокрутке вверх
+$('msgs').addEventListener('scroll', async () => {
+  if ($('msgs').scrollTop > 80) return;
+  const id = S.current, box = S.msgs.get(id);
+  if (!box || !box.loaded || !box.more || box.busy || !box.list.length) return;
+  box.busy = true;
+  try {
+    const r = await api(`/api/messages?chat=${id}&before=${box.list[0].id}`);
+    box.list = mergeMsgs(box.list, r.messages);
+    box.more = r.more;
+    if (S.current === id) renderMsgs(false, true);
+  } catch {} finally { box.busy = false; }
+});
+
+function addMessage(m) {
+  const c = S.chats.get(m.chat_id);
+  if (!c) { loadChats(); return; } // чат, которого ещё нет в списке
+  const isNew = !c.last || m.id > c.last.id;
+  const box = S.msgs.get(m.chat_id);
+  if (box && box.loaded) box.list = mergeMsgs(box.list, [m]);
+  if (isNew) c.last = m;
+  const mine = m.user_id === S.me.id;
+  if (mine) c.my_read = Math.max(c.my_read, m.id);
+  else {
+    stopTyping(c.id);
+    if (isNew && m.id > c.my_read) c.unread++;
+    if (isNew && (document.hidden || S.current !== c.id)) notify(c, m);
+  }
+  if (S.current === c.id) { renderMsgs(mine); markRead(); renderHead(); }
+  renderList();
+}
+
+// ================= Отправка =================
+$('composer').onsubmit = e => { e.preventDefault(); sendMsg(); };
+$('input').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey && !isMobile()) { e.preventDefault(); sendMsg(); }
+});
+$('input').addEventListener('input', () => { autosize(); notifyTyping(); });
+function autosize() { const t = $('input'); t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 160) + 'px'; }
+
+function sendMsg() {
+  const body = $('input').value.trim();
+  if (!body || !S.current) return;
+  // Оптимистично: показываем сообщение сразу, галочку ставим после ответа сервера
+  const p = { cid: newCid(), chat_id: S.current, user_id: S.me.id, body, created: Date.now(), pending: true };
+  S.pending.set(p.cid, p);
+  $('input').value = '';
+  autosize();
+  S.lastTypingSent = 0;
+  dispatchPending(p);
+  renderMsgs(true);
+  if (isMobile()) $('input').focus();
+}
+
+function dispatchPending(p) {
+  p.failed = false;
+  clearTimeout(p.timer);
+  wsSend({ t: 'send', c: p.chat_id, body: p.body, cid: p.cid });
+  p.timer = setTimeout(() => {
+    if (!S.pending.has(p.cid)) return;
+    p.failed = true;
+    if (S.current === p.chat_id) renderMsgs();
+  }, SEND_TIMEOUT);
+  if (S.current === p.chat_id) renderMsgs();
+}
+
+// ================= «Печатает…», прочитано, онлайн =================
+function notifyTyping() {
+  if (!S.current || !$('input').value.trim()) return;
+  const now = Date.now();
+  if (now - S.lastTypingSent < TYPING_SEND_EVERY) return;
+  S.lastTypingSent = now;
+  wsSend({ t: 'typing', c: S.current });
+}
+
+function onTyping(chatId, userId) {
+  if (!S.me || userId === S.me.id) return;
+  clearTimeout(S.typing.get(chatId));
+  S.typing.set(chatId, setTimeout(() => stopTyping(chatId), TYPING_SHOW_FOR));
+  renderList();
+  if (S.current === chatId) renderHead();
+}
+
+function stopTyping(chatId) {
+  if (!S.typing.has(chatId)) return;
+  clearTimeout(S.typing.get(chatId));
+  S.typing.delete(chatId);
+  renderList();
+  if (S.current === chatId) renderHead();
+}
+
+function markRead() {
+  const c = S.chats.get(S.current);
+  if (!c || document.hidden) return;
+  const box = S.msgs.get(c.id);
+  const lastLoaded = box && box.list.length ? box.list[box.list.length - 1].id : 0;
+  const lastId = Math.max(c.last ? c.last.id : 0, lastLoaded);
+  if (lastId > c.my_read) {
+    c.my_read = lastId;
+    wsSend({ t: 'read', c: c.id, m: lastId });
+  }
+  if (c.unread) { c.unread = 0; renderList(); }
+}
+
+function onRead(ev) {
+  const c = S.chats.get(ev.c);
+  if (!c) return;
+  if (ev.u === S.me.id) { // прочитал на другом своём устройстве
+    c.my_read = Math.max(c.my_read, ev.m);
+    if (!c.last || ev.m >= c.last.id) c.unread = 0;
+    renderList();
+  } else {
+    c.peer_read = Math.max(c.peer_read, ev.m);
+    if (S.current === c.id) renderMsgs();
+  }
+}
+
+function onPresence(ev) {
+  for (const c of S.chats.values()) {
+    if (c.peer.id !== ev.u) continue;
+    c.peer.online = ev.online;
+    if (ev.last_seen) c.peer.last_seen = ev.last_seen;
+  }
+  renderList();
+  renderHead();
+}
+
+// ================= Уведомления и видимость =================
+function notify(c, m) {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  try {
+    const n = new Notification(c.peer.name, { body: m.body.slice(0, 120), tag: 'dio-' + c.id });
+    n.onclick = () => { window.focus(); openChat(c.id); n.close(); };
+  } catch {}
+}
+document.addEventListener('click', () => {
+  if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission().catch(() => {});
+}, { once: true });
+
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) return;
+  markRead();
+  reconnectNow();
+});
+window.addEventListener('focus', markRead);
+
+// ================= Старт =================
+if (S.token) start();
+else $('auth').classList.remove('hidden');
+</script>
+</body>
+</html>
