@@ -46,7 +46,7 @@ svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:2; s
 .ava.on::after { content:""; position:absolute; right:0; bottom:0; width:12px; height:12px; border-radius:50%; background:var(--ok); border:2px solid var(--panel) }
 .icon-btn { width:38px; height:38px; border-radius:50%; display:grid; place-items:center; color:var(--muted); flex-shrink:0 }
 .icon-btn:hover { background:var(--panel2); color:var(--text) }
-#conn { position:fixed; top:calc(10px + env(safe-area-inset-top)); left:50%; transform:translateX(-50%); background:var(--panel2); border:1px solid var(--line); padding:6px 14px; border-radius:20px; font-size:13px; color:var(--muted); z-index:50; white-space:nowrap }
+#conn { position:fixed; top:calc(10px + env(safe-area-inset-top)); left:50%; transform:translateX(-50%); background:var(--panel2); border:1px solid var(--line); padding:6px 14px; border-radius:20px; font-size:13px; color:var(--muted); z-index:50; white-space:nowrap; pointer-events:none }
 
 /* ---------- вход ---------- */
 #auth { height:100dvh; display:grid; place-items:center; padding:16px }
@@ -60,8 +60,8 @@ svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:2; s
 
 /* ---------- каркас: навигация + разделы ---------- */
 #app { height:100dvh; display:flex }
-#nav { width:76px; flex-shrink:0; background:var(--panel); border-right:1px solid var(--line); display:flex; flex-direction:column; align-items:center; gap:8px; padding:calc(14px + env(safe-area-inset-top)) 0 14px }
-.nav-logo { font-weight:800; font-size:24px; letter-spacing:-1px; margin-bottom:12px; user-select:none }
+#nav { width:76px; flex-shrink:0; background:var(--panel); border-right:1px solid var(--line); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; position:relative }
+.nav-logo { position:absolute; top:calc(16px + env(safe-area-inset-top)); left:0; right:0; text-align:center; font-weight:800; font-size:24px; letter-spacing:-1px; user-select:none }
 .nav-btn { width:50px; height:50px; border-radius:14px; display:grid; place-items:center; color:var(--muted); position:relative }
 .nav-btn:hover { background:var(--panel2); color:var(--text) }
 .nav-btn.on { background:var(--line); color:var(--accent) }
@@ -79,17 +79,24 @@ svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:2; s
 .top h1 .icon-btn { margin:-6px 0 -6px -8px }
 
 /* ---------- лента ---------- */
-.ftabs { display:flex }
-.ftabs button { flex:1; padding:12px; color:var(--muted); font-weight:600; position:relative }
-.ftabs button:hover { background:var(--panel2) }
-.ftabs button.on { color:var(--text) }
-.ftabs button.on::after { content:""; position:absolute; left:50%; bottom:0; width:56px; margin-left:-28px; height:3px; border-radius:3px; background:var(--accent) }
-.pill { display:block; margin:0 auto 10px; background:var(--accent); color:#fff; font-size:14px; font-weight:600; padding:6px 16px; border-radius:20px }
-.new-post { display:flex; gap:12px; padding:14px 16px; border-bottom:1px solid var(--line) }
+.feed-top { padding:calc(16px + env(safe-area-inset-top)) 16px 16px; border-bottom:1px solid var(--line) }
+.create-btn { width:100%; display:flex; align-items:center; justify-content:center; gap:8px; padding:13px; border-radius:14px; background:var(--accent); color:#fff; font-weight:700; font-size:16px }
+.create-btn:hover { filter:brightness(1.08) }
+.create-btn svg { width:22px; height:22px; stroke-width:2.5 }
+.pill { position:sticky; top:calc(10px + env(safe-area-inset-top)); z-index:5; display:block; margin:10px auto 0; background:var(--accent); color:#fff; font-size:14px; font-weight:600; padding:6px 16px; border-radius:20px; box-shadow:0 4px 16px rgba(0,0,0,.4) }
+.verified { display:inline-grid; place-items:center; width:16px; height:16px; border-radius:50%; background:var(--accent); color:#fff; flex-shrink:0 }
+.verified svg { width:11px; height:11px; stroke-width:3.5 }
+.prof-name .verified { width:20px; height:20px; vertical-align:-2px; margin-left:6px }
+.prof-name .verified svg { width:13px; height:13px }
+
+/* окно создания поста */
+.modal { position:fixed; inset:0; z-index:40; background:rgba(0,0,0,.6); display:flex; align-items:flex-start; justify-content:center; padding:8vh 16px 16px }
+.sheet { width:100%; max-width:600px; background:var(--panel); border:1px solid var(--line); border-radius:18px; display:flex; flex-direction:column; max-height:84vh }
+.sheet-head { display:flex; align-items:center; gap:8px; padding:8px 10px; border-bottom:1px solid var(--line); font-weight:700 }
+.new-post { display:flex; gap:12px; padding:14px 16px; overflow-y:auto }
 .new-post .ava { width:44px; height:44px }
-.new-post-main { flex:1; min-width:0 }
-#postInput { width:100%; background:none; border:0; outline:none; resize:none; font-size:17px; min-height:48px; max-height:320px; padding:10px 0 }
-.new-post-foot { display:flex; justify-content:flex-end; align-items:center; gap:12px; padding-top:8px; border-top:1px solid var(--line) }
+#postInput { flex:1; min-width:0; background:none; border:0; outline:none; resize:none; font-size:17px; min-height:120px; padding:10px 0 }
+.new-post-foot { display:flex; justify-content:flex-end; align-items:center; gap:12px; padding:10px 16px; border-top:1px solid var(--line) }
 .counter { color:var(--muted); font-size:13px }
 .counter.over { color:var(--danger) }
 .post { display:flex; gap:12px; padding:14px 16px 8px; border-bottom:1px solid var(--line) }
@@ -184,6 +191,9 @@ svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:2; s
 [data-device=phone] .post .ava, [data-device=phone] .new-post .ava { width:40px; height:40px; font-size:15px }
 [data-device=phone] .post-body { font-size:15px }
 [data-device=phone] #postInput { font-size:16px } /* 16px — чтобы iOS не зумил поле */
+[data-device=phone] .modal { padding:0 }
+[data-device=phone] .sheet { max-width:none; max-height:none; height:100dvh; border:0; border-radius:0; padding-top:env(safe-area-inset-top); padding-bottom:env(safe-area-inset-bottom) }
+[data-device=phone] .new-post { flex:1 }
 [data-device=phone] #input { font-size:16px }
 [data-device=phone] .ava.big { width:76px; height:76px; font-size:30px }
 [data-device=phone] .prof-btns .btn.small { padding:6px 12px }
@@ -218,7 +228,7 @@ svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:2; s
       <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
     </button>
     <button class="nav-btn" data-go="messages" title="Сообщения">
-      <svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 6l-10 7L2 6"/></svg>
+      <svg viewBox="0 0 24 24"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>
       <span class="nav-badge hidden" id="navBadge"></span>
     </button>
     <button class="nav-btn" data-go="me" title="Профиль">
@@ -230,24 +240,13 @@ svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:2; s
     <!-- Лента -->
     <section class="view" id="vFeed">
       <div class="col">
-        <div class="top">
-          <h1>Лента</h1>
-          <div class="ftabs">
-            <button data-scope="all" class="on">Все</button>
-            <button data-scope="following">Подписки</button>
-          </div>
+        <div class="feed-top">
+          <button class="create-btn" id="createBtn">
+            <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+            Создать
+          </button>
         </div>
-        <div class="new-post">
-          <div class="ava" id="postAva"></div>
-          <div class="new-post-main">
-            <textarea id="postInput" rows="1" placeholder="Что нового?"></textarea>
-            <div class="new-post-foot">
-              <span class="counter" id="postCount"></span>
-              <button class="btn small" id="postBtn" disabled>Опубликовать</button>
-            </div>
-          </div>
-        </div>
-        <button class="pill hidden" id="newPosts" style="margin-top:10px"></button>
+        <button class="pill hidden" id="newPosts"></button>
         <div id="feedList"></div>
         <div class="loader" id="feedMore"></div>
       </div>
@@ -301,6 +300,24 @@ svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:2; s
     </section>
   </div>
 </section>
+
+<!-- Окно создания поста -->
+<div class="modal hidden" id="postModal">
+  <div class="sheet">
+    <div class="sheet-head">
+      <button class="icon-btn" id="postClose" title="Закрыть"><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+      Новый пост
+    </div>
+    <div class="new-post">
+      <div class="ava" id="postAva"></div>
+      <textarea id="postInput" placeholder="Что нового?"></textarea>
+    </div>
+    <div class="new-post-foot">
+      <span class="counter" id="postCount"></span>
+      <button class="btn small" id="postBtn" disabled>Опубликовать</button>
+    </div>
+  </div>
+</div>
 
 <script>
 'use strict';
@@ -539,14 +556,6 @@ function showFeed() {
   if (!FEED.loadedOnce) { FEED.loadedOnce = true; loadList(FEED, true); }
 }
 
-document.querySelectorAll('.ftabs button').forEach(b => b.onclick = () => {
-  if (S.scope === b.dataset.scope) return;
-  S.scope = b.dataset.scope;
-  document.querySelectorAll('.ftabs button').forEach(x => x.classList.toggle('on', x === b));
-  S.freshCount = 0; updateFresh();
-  loadList(FEED, true);
-});
-
 $('newPosts').onclick = showFresh;
 function showFresh() {
   S.freshCount = 0; updateFresh();
@@ -559,8 +568,22 @@ function updateFresh() {
   $('newPosts').textContent = S.scope === 'all' ? `↑ Новые посты: ${n}` : '↑ Есть новые посты';
 }
 
-// Новый пост
-$('postInput').addEventListener('input', () => { autosize($('postInput'), 320); updateCounter(); });
+// Новый пост: окно по кнопке «Создать»
+$('createBtn').onclick = openComposer;
+$('postClose').onclick = closeComposer;
+$('postModal').addEventListener('mousedown', e => { if (e.target === $('postModal')) closeComposer(); });
+addEventListener('keydown', e => { if (e.key === 'Escape' && !$('postModal').classList.contains('hidden')) closeComposer(); });
+function openComposer() {
+  $('postModal').classList.remove('hidden');
+  updateCounter();
+  $('postInput').focus();
+}
+function closeComposer() {
+  // черновик не теряем: если окно закрыли случайно, текст останется до следующего открытия
+  $('postModal').classList.add('hidden');
+}
+
+$('postInput').addEventListener('input', () => { if (DEVICE === 'pc') autosize($('postInput'), 420); updateCounter(); });
 $('postInput').addEventListener('keydown', e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) publish(); });
 $('postBtn').onclick = publish;
 function updateCounter() {
@@ -577,7 +600,8 @@ async function publish() {
   try {
     const p = await api('/api/posts', { method: 'POST', body: { body } });
     $('postInput').value = '';
-    autosize($('postInput'), 320);
+    $('postInput').style.height = '';
+    closeComposer();
     cachePost(p);
     prependPost(FEED, p);
     if (S.prof && S.prof.id === S.me.id) { prependPost(PROF, p); S.prof.posts++; renderProfile(); }
@@ -662,7 +686,9 @@ function postNode(p) {
   const head = el('div', 'post-head');
   const name = el('span', 'post-name', p.author.name);
   name.onclick = openAuthor;
-  head.append(name, el('span', 'post-sub', '@' + p.author.username + ' · ' + postTime(p.created)));
+  head.append(name);
+  if (p.author.verified) head.append(verifiedBadge());
+  head.append(el('span', 'post-sub', '@' + p.author.username + ' · ' + postTime(p.created)));
   if (p.author.id === S.me.id) {
     const del = el('button', 'post-del');
     del.title = 'Удалить';
@@ -680,6 +706,13 @@ function postNode(p) {
   art.append(ava, main);
   paintLike(art, p);
   return art;
+}
+
+function verifiedBadge() {
+  const b = el('span', 'verified');
+  b.title = 'Официальный аккаунт';
+  b.innerHTML = '<svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg>';
+  return b;
 }
 
 function paintLike(node, p) {
@@ -788,8 +821,10 @@ function renderProfile() {
     btns.append(fol, msg);
   }
   top.append(ava, btns);
+  const nameEl = el('div', 'prof-name', u.name);
+  if (u.verified) nameEl.append(verifiedBadge());
   box.append(top,
-    el('div', 'prof-name', u.name),
+    nameEl,
     el('div', 'prof-user', '@' + u.username + (me ? '' : ' · ' + lastSeenText(u))));
   if (u.bio) box.append(el('div', 'prof-bio', u.bio));
   const stats = el('div', 'prof-stats');
