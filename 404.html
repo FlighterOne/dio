@@ -52,7 +52,7 @@ svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:2; s
 #auth { height:100dvh; display:grid; place-items:center; padding:16px }
 .card { width:100%; max-width:360px; background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:28px 24px }
 .logo { font-size:36px; font-weight:800; letter-spacing:-1px; text-align:center }
-.logo span, .nav-logo span { color:var(--accent) }
+.logo span { color:var(--accent) }
 .sub { text-align:center; color:var(--muted); margin-bottom:20px; font-size:13px }
 .tabs { display:flex; background:var(--panel2); border-radius:10px; padding:3px; margin-bottom:16px }
 .tabs button { flex:1; padding:8px; border-radius:8px; color:var(--muted) }
@@ -79,11 +79,15 @@ svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:2; s
 .top h1 .icon-btn { margin:-6px 0 -6px -8px }
 
 /* ---------- лента ---------- */
-.feed-top { padding:calc(16px + env(safe-area-inset-top)) 16px 16px; border-bottom:1px solid var(--line) }
-.create-btn { width:100%; display:flex; align-items:center; justify-content:center; gap:8px; padding:13px; border-radius:14px; background:var(--accent); color:#fff; font-weight:700; font-size:16px }
-.create-btn:hover { filter:brightness(1.08) }
-.create-btn svg { width:22px; height:22px; stroke-width:2.5 }
-.pill { position:sticky; top:calc(10px + env(safe-area-inset-top)); z-index:5; display:block; margin:10px auto 0; background:var(--accent); color:#fff; font-size:14px; font-weight:600; padding:6px 16px; border-radius:20px; box-shadow:0 4px 16px rgba(0,0,0,.4) }
+.feed-head { position:sticky; top:0; z-index:6; height:calc(58px + env(safe-area-inset-top)); padding:env(safe-area-inset-top) 16px 0; display:flex; align-items:center; background:rgba(15,17,21,.86); -webkit-backdrop-filter:blur(12px); backdrop-filter:blur(12px); border-bottom:1px solid var(--line); transition:transform .25s ease }
+.brand { font-size:30px; font-weight:800; letter-spacing:-1.5px; user-select:none; cursor:pointer; line-height:1 }
+.brand span { color:var(--accent) }
+#vFeed.bars-hidden .feed-head { transform:translateY(-100%) }
+.pill { position:absolute; top:calc(100% + 10px); left:50%; transform:translateX(-50%); white-space:nowrap; background:var(--accent); color:#fff; font-size:14px; font-weight:600; padding:6px 16px; border-radius:20px; box-shadow:0 4px 16px rgba(0,0,0,.4) }
+.fab { position:absolute; right:28px; bottom:28px; z-index:20; width:58px; height:58px; border-radius:50%; background:var(--accent); color:#fff; display:grid; place-items:center; box-shadow:0 6px 22px rgba(91,140,255,.45); transition:transform .25s ease, opacity .25s ease }
+.fab svg { width:28px; height:28px; stroke-width:2.5 }
+.fab:hover { filter:brightness(1.1) }
+.fab.away { transform:translateY(110px) scale(.6); opacity:0; pointer-events:none }
 .verified { display:inline-grid; place-items:center; width:16px; height:16px; border-radius:50%; background:var(--accent); color:#fff; flex-shrink:0 }
 .verified svg { width:11px; height:11px; stroke-width:3.5 }
 .prof-name .verified { width:20px; height:20px; vertical-align:-2px; margin-left:6px }
@@ -180,7 +184,9 @@ svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:2; s
 /* ---------- ТЕЛЕФОН: навигация снизу, контент на всю ширину ---------- */
 [data-device=phone] #app { flex-direction:column-reverse }
 [data-device=phone] #nav { width:auto; flex-direction:row; justify-content:space-around; gap:0; border-right:0; border-top:1px solid var(--line); padding:4px 0 calc(4px + env(safe-area-inset-bottom)) }
-[data-device=phone] .nav-logo { display:none }
+[data-device=phone] .fab { right:16px; bottom:16px; width:54px; height:54px }
+[data-device=phone] .feed-head { height:calc(52px + env(safe-area-inset-top)) }
+[data-device=phone] .brand { font-size:26px }
 [data-device=phone] .nav-btn { width:64px; height:48px }
 [data-device=phone] .nav-btn.on { background:none }
 [data-device=phone] .nav-btn .ava { width:30px; height:30px; font-size:13px }
@@ -223,7 +229,6 @@ svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:2; s
 <!-- ================= Приложение ================= -->
 <section id="app" class="hidden">
   <nav id="nav">
-    <div class="nav-logo">d<span>.</span></div>
     <button class="nav-btn" data-go="feed" title="Лента">
       <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
     </button>
@@ -240,17 +245,19 @@ svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:2; s
     <!-- Лента -->
     <section class="view" id="vFeed">
       <div class="col">
-        <div class="feed-top">
-          <button class="create-btn" id="createBtn">
-            <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
-            Создать
-          </button>
+        <div class="feed-head">
+          <div class="brand" id="brand" title="Наверх">di<span>o</span></div>
+          <button class="pill hidden" id="newPosts"></button>
         </div>
-        <button class="pill hidden" id="newPosts"></button>
         <div id="feedList"></div>
         <div class="loader" id="feedMore"></div>
       </div>
     </section>
+
+    <!-- Круглая кнопка «создать пост»: прячется при прокрутке вниз, появляется при прокрутке вверх -->
+    <button class="fab" id="createBtn" title="Создать пост">
+      <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+    </button>
 
     <!-- Сообщения (директ) -->
     <section class="view" id="vMessages">
@@ -538,6 +545,7 @@ function setView(name, navKey) {
   $('vMessages').classList.toggle('on', name === 'messages');
   $('vProfile').classList.toggle('on', name === 'profile');
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('on', b.dataset.go === navKey));
+  $('createBtn').classList.toggle('hidden', name !== 'feed');
   if (name !== 'messages') leaveChat();
 }
 
@@ -557,6 +565,21 @@ function showFeed() {
 }
 
 $('newPosts').onclick = showFresh;
+$('brand').onclick = () => $('vFeed').scrollTo({ top: 0, behavior: 'smooth' });
+
+// Шапка с логотипом и кнопка «+» прячутся, когда листаешь вниз, и возвращаются, когда листаешь вверх
+let lastFeedY = 0;
+$('vFeed').addEventListener('scroll', () => {
+  const y = $('vFeed').scrollTop, d = y - lastFeedY;
+  if (y < 60) setFeedBars(true);
+  else if (d > 6) setFeedBars(false);
+  else if (d < -6) setFeedBars(true);
+  lastFeedY = y;
+}, { passive: true });
+function setFeedBars(show) {
+  $('vFeed').classList.toggle('bars-hidden', !show);
+  $('createBtn').classList.toggle('away', !show);
+}
 function showFresh() {
   S.freshCount = 0; updateFresh();
   $('vFeed').scrollTo({ top: 0 });
