@@ -54,9 +54,9 @@ svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:2; s
 .logo { font-size:36px; font-weight:800; letter-spacing:-1px; text-align:center }
 .logo span { color:var(--accent) }
 .sub { text-align:center; color:var(--muted); margin-bottom:20px; font-size:13px }
-.tabs { display:flex; background:var(--panel2); border-radius:10px; padding:3px; margin-bottom:16px }
-.tabs button { flex:1; padding:8px; border-radius:8px; color:var(--muted) }
-.tabs button.on { background:var(--line); color:var(--text) }
+.tabs, .seg { display:flex; background:var(--panel2); border-radius:10px; padding:3px; margin-bottom:16px }
+.tabs button, .seg button { flex:1; padding:8px; border-radius:8px; color:var(--muted) }
+.tabs button.on, .seg button.on { background:var(--line); color:var(--text) }
 
 /* ---------- каркас: навигация + разделы ---------- */
 #app { height:100dvh; display:flex }
@@ -147,6 +147,44 @@ svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:2; s
 .role { font-size:12px; font-weight:600; padding:2px 8px; border-radius:10px; background:var(--line); color:var(--muted); flex-shrink:0; margin-left:auto }
 .role.owner { background:rgba(91,140,255,.15); color:var(--accent) }
 .sheet-body { padding:16px; overflow-y:auto }
+.nav-admin { position:absolute; left:13px; bottom:calc(16px + env(safe-area-inset-bottom)) }
+.link-btn { color:var(--accent); font-size:13px; font-weight:600; margin:-4px 0 12px; display:inline-block }
+.link-btn:hover { text-decoration:underline }
+.hint { color:var(--muted); font-size:14px; margin-bottom:12px }
+.extra-names { color:var(--muted); font-size:14px; margin-top:2px }
+
+/* площадка юзернеймов */
+.lot { display:flex; align-items:center; gap:12px; padding:12px 0; border-top:1px solid var(--line) }
+.lot-name { font-weight:700; font-size:16px; overflow-wrap:anywhere }
+.lot-info { color:var(--muted); font-size:13px }
+.lot-btns { display:flex; gap:6px; flex-shrink:0 }
+
+/* панель администратора */
+.adm-section { padding:16px; border-bottom:1px solid var(--line) }
+.adm-title { font-weight:700; font-size:17px; margin-bottom:12px }
+.adm-rank { color:var(--muted); margin-bottom:12px }
+.adm-rank b { color:var(--accent) }
+.adm-stats { display:grid; grid-template-columns:repeat(auto-fit, minmax(120px, 1fr)); gap:10px }
+.stat-card { background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:14px }
+.stat-card b { display:block; font-size:24px }
+.stat-card span { color:var(--muted); font-size:13px }
+#admMarketForm { margin-bottom:8px }
+
+/* «тень» галочки в своём профиле — приглашение подать заявку на верификацию */
+.verified.ghost { background:none; border:1.5px dashed var(--muted); color:var(--muted); opacity:.55; cursor:pointer; font-size:12px; font-weight:800; line-height:1 }
+.prof-name .verified.ghost { font-size:13px }
+.verified.ghost:hover { opacity:1; border-color:var(--accent); color:var(--accent) }
+.field-label { font-size:13px; color:var(--muted); font-weight:600; margin:4px 0 6px }
+.seg-wrap { flex-wrap:wrap; gap:3px }
+.seg-wrap button { flex:1 1 auto; font-size:14px }
+.verif-status { background:var(--panel2); border:1px solid var(--line); border-radius:12px; padding:12px 14px; margin-bottom:14px; font-size:14px }
+.verif-status b { display:block; margin-bottom:2px }
+.req { padding:12px 0; border-top:1px solid var(--line) }
+.req-head { display:flex; align-items:center; gap:10px }
+.req-head .ava { width:36px; height:36px; font-size:14px; cursor:pointer }
+.req-text { margin-top:8px; font-size:14px; white-space:pre-wrap; overflow-wrap:anywhere }
+.req-links { margin-top:6px; font-size:13px; color:var(--accent); white-space:pre-wrap; overflow-wrap:anywhere }
+.req .prof-btns { justify-content:flex-start; margin-top:10px }
 .comm { cursor:pointer }
 .comm:hover { background:var(--panel2) }
 .ava.sq, .comm .ava { border-radius:14px }
@@ -215,6 +253,7 @@ svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:2; s
 [data-device=phone] #app { flex-direction:column-reverse }
 [data-device=phone] #nav { width:auto; flex-direction:row; justify-content:space-around; gap:0; border-right:0; border-top:1px solid var(--line); padding:4px 0 calc(4px + env(safe-area-inset-bottom)) }
 [data-device=phone] .fab { right:16px; bottom:16px; width:54px; height:54px }
+[data-device=phone] .nav-admin { display:none !important } /* кнопка панели — только в версии для ПК */
 [data-device=phone] .feed-head { height:calc(52px + env(safe-area-inset-top)) }
 [data-device=phone] .brand { font-size:26px }
 [data-device=phone] .nav-btn { width:64px; height:48px }
@@ -268,6 +307,10 @@ svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:2; s
     </button>
     <button class="nav-btn" data-go="me" title="Профиль">
       <div class="ava" id="navAva"></div>
+    </button>
+    <!-- Панель администратора: только для рангов «стажёр» и выше -->
+    <button class="nav-btn nav-admin hidden" id="navAdmin" data-go="admin" title="Панель администратора">
+      <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
     </button>
   </nav>
 
@@ -358,6 +401,39 @@ svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:2; s
         <div class="loader" id="commMore"></div>
       </div>
     </section>
+
+    <!-- Панель администратора -->
+    <section class="view" id="vAdmin">
+      <div class="col">
+        <div class="top">
+          <h1>Панель администратора</h1>
+          <div style="height:8px"></div>
+        </div>
+        <div class="adm-section">
+          <div class="adm-rank" id="admRank"></div>
+          <div class="adm-stats" id="admStats"></div>
+        </div>
+        <div class="adm-section hidden" id="admVerifSection">
+          <div class="adm-title">Заявки на верификацию</div>
+          <div id="admVerif"></div>
+        </div>
+        <div class="adm-section">
+          <div class="adm-title">Юзернеймы площадки</div>
+          <div id="admMarketForm" class="hidden">
+            <input class="field" id="lUser" placeholder="Юзернейм (латиница, цифры, _)" autocomplete="off" autocapitalize="off" spellcheck="false">
+            <div class="seg" id="lKind">
+              <button type="button" data-kind="sale" class="on">Продажа</button>
+              <button type="button" data-kind="raffle">Розыгрыш</button>
+            </div>
+            <input class="field" id="lPrice" type="number" min="1" placeholder="Цена">
+            <input class="field hidden" id="lEnds" type="datetime-local" title="Окончание приёма заявок (можно не указывать)">
+            <button class="btn small" id="lAdd">Выставить</button>
+            <div class="err" id="lErr"></div>
+          </div>
+          <div id="admMarket"></div>
+        </div>
+      </div>
+    </section>
   </div>
 </section>
 
@@ -380,6 +456,50 @@ svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:2; s
     <div class="new-post-foot">
       <span class="counter" id="postCount"></span>
       <button class="btn small" id="postBtn" disabled>Опубликовать</button>
+    </div>
+  </div>
+</div>
+
+<!-- Площадка юзернеймов -->
+<div class="modal hidden" id="marketModal">
+  <div class="sheet">
+    <div class="sheet-head">
+      <button class="icon-btn" id="marketClose" title="Закрыть"><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+      Юзернеймы площадки
+    </div>
+    <div class="sheet-body">
+      <div class="hint">dio продаёт и разыгрывает красивые юзернеймы. Полученный юзернейм добавится к вашему профилю как дополнительный — по нему вас тоже можно будет найти.</div>
+      <div id="marketList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Заявка на верификацию -->
+<div class="modal hidden" id="verifModal">
+  <div class="sheet">
+    <div class="sheet-head">
+      <button class="icon-btn" id="verifClose" title="Закрыть"><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+      Верификация аккаунта
+    </div>
+    <div class="sheet-body" id="verifBody">
+      <div class="hint">Галочка подтверждает, что аккаунт действительно принадлежит известному человеку, автору, бренду или СМИ. Заявку проверят модераторы dio.</div>
+      <div id="verifStatus" class="verif-status hidden"></div>
+      <div id="verifForm">
+        <div class="field-label">Кто вы</div>
+        <div class="seg seg-wrap" id="vCat">
+          <button type="button" data-cat="person">Известная личность</button>
+          <button type="button" data-cat="creator">Блогер / автор</button>
+          <button type="button" data-cat="brand">Бренд / компания</button>
+          <button type="button" data-cat="media">СМИ</button>
+          <button type="button" data-cat="other">Другое</button>
+        </div>
+        <div class="field-label">Почему аккаунт стоит верифицировать</div>
+        <textarea class="field" id="vReason" rows="4" maxlength="1000" placeholder="Кто вы, чем занимаетесь, почему вас могут искать в dio"></textarea>
+        <div class="field-label">Ссылки, подтверждающие личность (необязательно)</div>
+        <textarea class="field" id="vLinks" rows="2" maxlength="500" placeholder="Сайт, соцсети, статьи о вас — по одной в строке"></textarea>
+        <button class="btn" id="vSend">Отправить на модерацию</button>
+        <div class="err" id="vErr"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -610,7 +730,13 @@ async function start() {
 function renderMe() {
   setAva($('navAva'), S.me, false);
   setAva($('postAva'), S.me, false);
+  $('navAdmin').classList.toggle('hidden', !hasRank('intern'));
 }
+
+// ================= Ранги =================
+const RANKS = ['user', 'partner', 'corporate', 'intern', 'moder', 'admin', 'owner']; // по возрастанию
+const RANK_NAMES = { user: 'Пользователь', partner: 'Партнёр', corporate: 'Корпоративный', intern: 'Стажёр', moder: 'Модератор', admin: 'Админ', owner: 'Владелец' };
+const hasRank = min => !!S.me && RANKS.indexOf(S.me.rank || 'user') >= RANKS.indexOf(min);
 
 // ================= Навигация (адреса вида #/feed, #/messages/12, #/u/login) =================
 function go(path) { location.hash = '#/' + path; }
@@ -622,6 +748,7 @@ function route() {
   if (a === 'messages') showMessages(b ? Number(b) : 0);
   else if (a === 'u' && b) showProfile(decodeURIComponent(b));
   else if (a === 'c' && b) showCommunity(decodeURIComponent(b));
+  else if (a === 'admin') showAdmin();
   else showFeed();
 }
 
@@ -631,6 +758,7 @@ function setView(name, navKey) {
   $('vMessages').classList.toggle('on', name === 'messages');
   $('vProfile').classList.toggle('on', name === 'profile');
   $('vCommunity').classList.toggle('on', name === 'community');
+  $('vAdmin').classList.toggle('on', name === 'admin');
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('on', b.dataset.go === navKey));
   updateFab();
   if (name !== 'messages') leaveChat();
@@ -710,6 +838,8 @@ addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
   if (!$('postModal').classList.contains('hidden')) closeComposer();
   if (!$('commModal').classList.contains('hidden')) closeCommModal();
+  if (!$('marketModal').classList.contains('hidden')) closeMarket();
+  if (!$('verifModal').classList.contains('hidden')) closeVerify();
 });
 // community — сразу выбрать «от имени сообщества» (когда «＋» нажат на странице сообщества)
 function openComposer(community) {
@@ -1254,9 +1384,16 @@ function renderProfile() {
   top.append(ava, btns);
   const nameEl = el('div', 'prof-name', u.name);
   if (u.verified) nameEl.append(verifiedBadge());
+  else if (me) { // в своём профиле — тусклая «тень» галочки с вопросом: подать заявку на верификацию
+    const ghost = el('span', 'verified ghost', '?');
+    ghost.title = 'Подать заявку на верификацию';
+    ghost.onclick = openVerify;
+    nameEl.append(ghost);
+  }
   box.append(top,
     nameEl,
     el('div', 'prof-user', '@' + u.username + (me ? '' : ' · ' + lastSeenText(u))));
+  if (u.usernames && u.usernames.length) box.append(el('div', 'extra-names', 'также ' + u.usernames.map(x => '@' + x).join(', ')));
   if (u.bio) box.append(el('div', 'prof-bio', u.bio));
   const stats = el('div', 'prof-stats');
   const stat = (n, forms) => { const s = el('span'); s.append(el('b', null, n), ' ' + plural(n, forms)); return s; };
@@ -1272,6 +1409,12 @@ function editProfile() {
   box.replaceChildren();
   const name = el('input', 'field');
   name.value = u.name; name.maxLength = 64; name.placeholder = 'Имя';
+  const uname = el('input', 'field');
+  uname.value = u.username; uname.maxLength = 33; uname.placeholder = 'Юзернейм (латиница, цифры, _)';
+  uname.autocapitalize = 'off'; uname.spellcheck = false; uname.autocomplete = 'off';
+  const more = el('button', 'link-btn', '+ Добавить ещё один юзернейм');
+  more.type = 'button';
+  more.onclick = openMarket;
   const bio = el('textarea', 'field');
   bio.value = u.bio || ''; bio.maxLength = 300; bio.rows = 3; bio.placeholder = 'О себе';
   const err = el('div', 'err');
@@ -1280,7 +1423,14 @@ function editProfile() {
   cancel.onclick = renderProfile;
   save.onclick = async () => {
     save.disabled = true;
+    err.textContent = '';
     try {
+      const newName = uname.value.trim().replace(/^@/, '');
+      if (newName !== u.username) {
+        const nu = await api('/api/me/username', { method: 'POST', body: { username: newName } });
+        u.username = nu.username; S.me.username = nu.username;
+        history.replaceState(null, '', '#/u/' + encodeURIComponent(nu.username)); // ссылка на профиль меняется
+      }
       const r = await api('/api/me', { method: 'POST', body: { name: name.value.trim(), bio: bio.value.trim() } });
       u.name = r.name; u.bio = r.bio || '';
       S.me.name = r.name; S.me.bio = r.bio;
@@ -1291,8 +1441,226 @@ function editProfile() {
   const row = el('div', 'prof-btns');
   row.style.justifyContent = 'flex-start';
   row.append(save, cancel);
-  box.append(el('div', 'prof-name', 'Редактирование'), el('div', 'prof-user', '@' + u.username), el('div', null, ' '), name, bio, row, err);
+  const extra = u.usernames && u.usernames.length ? el('div', 'extra-names', 'Дополнительные: ' + u.usernames.map(x => '@' + x).join(', ')) : null;
+  box.append(el('div', 'prof-name', 'Редактирование'), el('div', null, ' '), name, uname);
+  if (extra) { extra.style.margin = '-4px 0 6px'; box.append(extra); }
+  box.append(more, bio, row, err);
   name.focus();
+}
+
+// ================= Площадка юзернеймов =================
+$('marketClose').onclick = closeMarket;
+$('marketModal').addEventListener('mousedown', e => { if (e.target === $('marketModal')) closeMarket(); });
+function closeMarket() { $('marketModal').classList.add('hidden'); }
+
+async function openMarket() {
+  $('marketModal').classList.remove('hidden');
+  const box = $('marketList');
+  box.replaceChildren(el('div', 'loader', 'Загрузка…'));
+  try {
+    const list = await api('/api/market');
+    box.replaceChildren();
+    if (!list.length) box.append(el('div', 'empty', 'Сейчас площадка ничего не продаёт и не разыгрывает. Загляните позже!'));
+    for (const l of list) box.append(lotNode(l, false));
+  } catch (e) { box.replaceChildren(el('div', 'empty', e.message)); }
+}
+
+const fmtDate = ts => new Date(ts).toLocaleString('ru-RU', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
+
+// Лот площадки. admin=true — вид для панели администратора (разыграть / снять).
+function lotNode(l, admin) {
+  const it = el('div', 'lot');
+  const meta = el('div', 'meta');
+  const info = l.kind === 'sale'
+    ? 'Продажа · цена ' + Number(l.price).toLocaleString('ru-RU')
+    : 'Розыгрыш · ' + (l.ends ? 'до ' + fmtDate(l.ends) : 'без срока') + ' · ' + l.entries + ' ' + plural(l.entries, ['участник', 'участника', 'участников']);
+  meta.append(el('div', 'lot-name', '@' + l.username), el('div', 'lot-info', info));
+  const btns = el('div', 'lot-btns');
+  if (admin) {
+    if (l.kind === 'raffle') {
+      const draw = el('button', 'btn small', 'Разыграть');
+      draw.onclick = () => drawLot(l, draw);
+      btns.append(draw);
+    }
+    const del = el('button', 'btn small ghost danger', 'Снять');
+    del.onclick = () => deleteLot(l);
+    btns.append(del);
+  } else if (l.kind === 'sale') {
+    const buy = el('button', 'btn small ghost', 'Купить');
+    buy.disabled = true;
+    buy.title = 'Покупка появится позже';
+    btns.append(buy);
+  } else {
+    const ended = !!l.ends && l.ends < Date.now();
+    const join = el('button', 'btn small' + (l.i_entered || ended ? ' ghost' : ''), l.i_entered ? 'Вы участвуете' : ended ? 'Приём закрыт' : 'Участвовать');
+    join.disabled = l.i_entered || ended;
+    join.onclick = async () => {
+      join.disabled = true;
+      try {
+        const r = await api('/api/market/enter', { method: 'POST', body: { id: l.id } });
+        l.entries = r.entries; l.i_entered = true;
+        it.replaceWith(lotNode(l, false));
+      } catch (e) { alert(e.message); join.disabled = false; }
+    };
+    btns.append(join);
+  }
+  it.append(meta, btns);
+  return it;
+}
+
+// ================= Верификация =================
+const VERIF_CATS = { person: 'Известная личность', creator: 'Блогер / автор', brand: 'Бренд / компания', media: 'СМИ', other: 'Другое' };
+let verifCat = '';
+document.querySelectorAll('#vCat button').forEach(b => b.onclick = () => {
+  verifCat = b.dataset.cat;
+  document.querySelectorAll('#vCat button').forEach(x => x.classList.toggle('on', x === b));
+});
+$('verifClose').onclick = closeVerify;
+$('verifModal').addEventListener('mousedown', e => { if (e.target === $('verifModal')) closeVerify(); });
+function closeVerify() { $('verifModal').classList.add('hidden'); }
+
+async function openVerify() {
+  $('verifModal').classList.remove('hidden');
+  $('vErr').textContent = '';
+  $('verifStatus').classList.add('hidden');
+  $('verifForm').classList.add('hidden');
+  let last = null;
+  try { last = await api('/api/verification'); } catch {}
+  const st = $('verifStatus');
+  st.replaceChildren();
+  if (last && last.status === 'pending') { // уже ждём решения — форму не показываем
+    st.append(el('b', null, 'Заявка на рассмотрении'), 'Отправлена ' + fmtDate(last.created) + '. Модераторы проверят её и примут решение.');
+    st.classList.remove('hidden');
+    return;
+  }
+  if (last && last.status === 'rejected') {
+    st.append(el('b', null, 'Прошлая заявка отклонена'), 'Можно подать новую — добавьте больше подробностей и ссылок.');
+    st.classList.remove('hidden');
+  }
+  $('verifForm').classList.remove('hidden');
+}
+
+$('vSend').onclick = async () => {
+  $('vErr').textContent = '';
+  if (!verifCat) { $('vErr').textContent = 'Выберите, кто вы'; return; }
+  $('vSend').disabled = true;
+  try {
+    await api('/api/verification', { method: 'POST', body: { category: verifCat, reason: $('vReason').value.trim(), links: $('vLinks').value.trim() } });
+    $('vReason').value = $('vLinks').value = '';
+    openVerify(); // покажет «Заявка на рассмотрении»
+  } catch (e) { $('vErr').textContent = e instanceof TypeError ? 'Сервер недоступен' : e.message; }
+  $('vSend').disabled = false;
+};
+
+async function loadAdminVerifications() {
+  const box = $('admVerif');
+  box.replaceChildren(el('div', 'loader', 'Загрузка…'));
+  try {
+    const list = await api('/api/admin/verifications');
+    box.replaceChildren();
+    if (!list.length) box.append(el('div', 'hint', 'Новых заявок нет'));
+    for (const v of list) box.append(verifNode(v));
+  } catch (e) { box.replaceChildren(el('div', 'hint', e.message)); }
+}
+
+function verifNode(v) {
+  const it = el('div', 'req');
+  const head = el('div', 'req-head');
+  const ava = el('div', 'ava');
+  setAva(ava, v.user, false);
+  const open = () => go('u/' + encodeURIComponent(v.user.username));
+  ava.onclick = open;
+  const meta = el('div', 'meta');
+  const name = el('div', 'title', v.user.name);
+  name.style.cursor = 'pointer';
+  name.onclick = open;
+  meta.append(name, el('div', 'lot-info', '@' + v.user.username + ' · ' + (VERIF_CATS[v.category] || v.category) + ' · ' + fmtDate(v.created)));
+  head.append(ava, meta);
+  it.append(head, el('div', 'req-text', v.reason));
+  if (v.links) it.append(el('div', 'req-links', v.links));
+  const btns = el('div', 'prof-btns');
+  const ok = el('button', 'btn small', 'Одобрить');
+  const no = el('button', 'btn small ghost danger', 'Отклонить');
+  const decide = async approve => {
+    ok.disabled = no.disabled = true;
+    try {
+      await api('/api/admin/verifications/decide', { method: 'POST', body: { id: v.id, approve } });
+      it.remove();
+      if (!$('admVerif').children.length) $('admVerif').append(el('div', 'hint', 'Новых заявок нет'));
+    } catch (e) { alert(e.message); ok.disabled = no.disabled = false; }
+  };
+  ok.onclick = () => decide(true);
+  no.onclick = () => { if (confirm(`Отклонить заявку @${v.user.username}?`)) decide(false); };
+  btns.append(ok, no);
+  it.append(btns);
+  return it;
+}
+
+// ================= Панель администратора =================
+async function showAdmin() {
+  if (!hasRank('intern')) { go('feed'); return; }
+  setView('admin', 'admin');
+  $('admRank').replaceChildren('Ваш ранг: ', el('b', null, RANK_NAMES[S.me.rank] || S.me.rank));
+  $('admMarketForm').classList.toggle('hidden', !hasRank('admin'));
+  $('admVerifSection').classList.toggle('hidden', !hasRank('moder'));
+  if (hasRank('moder')) loadAdminVerifications();
+  loadAdminMarket();
+  try {
+    const s = await api('/api/admin/stats');
+    const card = (n, label) => { const c = el('div', 'stat-card'); c.append(el('b', null, n), el('span', null, label)); return c; };
+    $('admStats').replaceChildren(card(s.users, 'пользователей'), card(s.online, 'онлайн сейчас'), card(s.posts, 'постов'), card(s.communities, 'сообществ'));
+  } catch (e) { $('admStats').replaceChildren(el('div', 'hint', e.message)); }
+}
+
+async function loadAdminMarket() {
+  const box = $('admMarket');
+  box.replaceChildren(el('div', 'loader', 'Загрузка…'));
+  try {
+    const list = await api('/api/market');
+    box.replaceChildren();
+    if (!list.length) box.append(el('div', 'hint', 'Сейчас ничего не продаётся и не разыгрывается'));
+    for (const l of list) box.append(lotNode(l, hasRank('admin')));
+  } catch (e) { box.replaceChildren(el('div', 'hint', e.message)); }
+}
+
+let lotKind = 'sale';
+document.querySelectorAll('#lKind button').forEach(b => b.onclick = () => {
+  lotKind = b.dataset.kind;
+  document.querySelectorAll('#lKind button').forEach(x => x.classList.toggle('on', x === b));
+  $('lPrice').classList.toggle('hidden', lotKind !== 'sale');
+  $('lEnds').classList.toggle('hidden', lotKind !== 'raffle');
+});
+
+$('lAdd').onclick = async () => {
+  $('lAdd').disabled = true;
+  $('lErr').textContent = '';
+  try {
+    await api('/api/admin/market', { method: 'POST', body: {
+      username: $('lUser').value.trim(), kind: lotKind,
+      price: Number($('lPrice').value) || 0,
+      ends: $('lEnds').value ? new Date($('lEnds').value).getTime() : 0 } });
+    $('lUser').value = $('lPrice').value = $('lEnds').value = '';
+    loadAdminMarket();
+  } catch (e) { $('lErr').textContent = e.message; }
+  $('lAdd').disabled = false;
+};
+
+async function drawLot(l, btn) {
+  if (!confirm(`Провести розыгрыш @${l.username} среди ${l.entries} ${plural(l.entries, ['участника', 'участников', 'участников'])}?`)) return;
+  btn.disabled = true;
+  try {
+    const r = await api('/api/admin/market/draw', { method: 'POST', body: { id: l.id } });
+    alert(`Победитель: ${r.winner.name} (@${r.winner.username}) — получает @${r.username}`);
+    loadAdminMarket();
+  } catch (e) { alert(e.message); btn.disabled = false; }
+}
+
+async function deleteLot(l) {
+  if (!confirm(`Снять @${l.username} с площадки?`)) return;
+  try {
+    await api('/api/admin/market/delete', { method: 'POST', body: { id: l.id } });
+    loadAdminMarket();
+  } catch (e) { alert(e.message); }
 }
 
 async function toggleFollow(btn) {
