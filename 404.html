@@ -147,6 +147,22 @@ svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:2; s
 .role { font-size:12px; font-weight:600; padding:2px 8px; border-radius:10px; background:var(--line); color:var(--muted); flex-shrink:0; margin-left:auto }
 .role.owner { background:rgba(91,140,255,.15); color:var(--accent) }
 .sheet-body { padding:16px; overflow-y:auto }
+.comm { cursor:pointer }
+.comm:hover { background:var(--panel2) }
+.ava.sq, .comm .ava { border-radius:14px }
+.ava.big.sq { border-radius:26px }
+.btn.ghost.danger { color:var(--danger) }
+.btn.ghost.danger:hover { background:rgba(255,107,107,.1) }
+
+/* «от чьего имени» в окне поста */
+.as-switch { display:flex; gap:4px; margin:12px 16px 0; background:var(--panel2); border-radius:10px; padding:3px }
+.as-switch button { flex:1; padding:8px; border-radius:8px; color:var(--muted); font-size:14px; font-weight:600 }
+.as-switch button.on { background:var(--line); color:var(--text) }
+.as-list { display:flex; gap:8px; overflow-x:auto; padding:12px 16px 0 }
+.as-item { display:flex; align-items:center; gap:8px; padding:5px 12px 5px 5px; border:1px solid var(--line); border-radius:12px; flex-shrink:0; color:var(--muted); font-size:14px; font-weight:600 }
+.as-item .ava { width:28px; height:28px; font-size:12px; border-radius:8px }
+.as-item.on { border-color:var(--accent); color:var(--text); background:rgba(91,140,255,.1) }
+.as-empty { color:var(--muted); font-size:14px; padding:2px 0 }
 
 /* ---------- сообщения ---------- */
 #side { width:340px; flex-shrink:0; border-right:1px solid var(--line); display:flex; flex-direction:column; background:var(--panel) }
@@ -326,6 +342,22 @@ svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:2; s
         <div id="profComms" class="hidden"></div>
       </div>
     </section>
+
+    <!-- Сообщество -->
+    <section class="view" id="vCommunity">
+      <div class="col">
+        <div class="top">
+          <h1>
+            <button class="icon-btn" id="commBack" title="Назад"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
+            <span>Сообщество</span>
+          </h1>
+          <div style="height:8px"></div>
+        </div>
+        <div class="prof" id="commHead"></div>
+        <div id="commList"></div>
+        <div class="loader" id="commMore"></div>
+      </div>
+    </section>
   </div>
 </section>
 
@@ -336,6 +368,11 @@ svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:2; s
       <button class="icon-btn" id="postClose" title="Закрыть"><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
       Новый пост
     </div>
+    <div class="as-switch" id="asSwitch">
+      <button data-as="user" class="on">Как пользователь</button>
+      <button data-as="community">Как сообщество</button>
+    </div>
+    <div class="as-list hidden" id="asList"></div>
     <div class="new-post">
       <div class="ava" id="postAva"></div>
       <textarea id="postInput" placeholder="Что нового?"></textarea>
@@ -410,6 +447,11 @@ const S = {
   freshCount: 0,      // сколько новых постов пришло, пока лента не обновлена
   prof: null,         // открытый профиль
   profReq: 0,
+  comm: null,         // открытое сообщество
+  commReq: 0,
+  myComms: null,      // сообщества, от имени которых я могу публиковать
+  postAs: null,       // от чьего имени пишу пост: null — от себя, иначе сообщество
+  asTab: 'user',
 };
 let searchMode = false, searchTimer = 0, authMode = 'login', navDepth = 0;
 
@@ -420,6 +462,9 @@ const FEED = { box: 'feedList', loader: 'feedMore', ids: [], more: true, busy: f
 const PROF = { box: 'profList', loader: 'profMore', ids: [], more: true, busy: false, error: false, gen: 0,
   url: () => '/api/feed?user=' + (S.prof ? S.prof.id : 0),
   empty: () => 'Постов пока нет' };
+const COMM = { box: 'commList', loader: 'commMore', ids: [], more: false, busy: false, error: false, gen: 0,
+  url: () => '/api/feed?community=' + (S.comm ? S.comm.id : 0),
+  empty: () => 'В сообществе пока нет постов' };
 
 // ================= Утилиты =================
 function store(k, v) {
@@ -576,6 +621,7 @@ function route() {
   const [a, b] = location.hash.replace(/^#\/?/, '').split('/');
   if (a === 'messages') showMessages(b ? Number(b) : 0);
   else if (a === 'u' && b) showProfile(decodeURIComponent(b));
+  else if (a === 'c' && b) showCommunity(decodeURIComponent(b));
   else showFeed();
 }
 
@@ -584,21 +630,30 @@ function setView(name, navKey) {
   $('vFeed').classList.toggle('on', name === 'feed');
   $('vMessages').classList.toggle('on', name === 'messages');
   $('vProfile').classList.toggle('on', name === 'profile');
+  $('vCommunity').classList.toggle('on', name === 'community');
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('on', b.dataset.go === navKey));
   updateFab();
   if (name !== 'messages') leaveChat();
 }
 
-// Кнопка «＋»: в ленте — новый пост; в своём профиле — новый пост или новое сообщество (по вкладке)
+// Кнопка «＋»: в ленте — новый пост; в своём профиле — новый пост или новое сообщество (по вкладке);
+// в сообществе — пост от имени сообщества (только владельцу/админу)
 function updateFab() {
   const fab = $('createBtn');
-  const show = S.view === 'feed' || (S.view === 'profile' && S.profMine);
+  const show = S.view === 'feed'
+    || (S.view === 'profile' && S.profMine)
+    || (S.view === 'community' && S.comm && !!S.comm.role);
   fab.classList.toggle('hidden', !show);
-  const view = S.view === 'feed' ? $('vFeed') : $('vProfile');
-  fab.classList.toggle('away', view.classList.contains('bars-hidden'));
-  fab.title = S.view === 'profile' && S.profTab === 'communities' ? 'Создать сообщество' : 'Создать пост';
+  const view = { feed: 'vFeed', profile: 'vProfile', community: 'vCommunity' }[S.view];
+  fab.classList.toggle('away', !!view && $(view).classList.contains('bars-hidden'));
+  fab.title = S.view === 'profile' && S.profTab === 'communities' ? 'Создать сообщество'
+    : S.view === 'community' ? 'Пост от имени сообщества' : 'Создать пост';
 }
-$('createBtn').onclick = () => S.view === 'profile' && S.profTab === 'communities' ? openCommModal() : openComposer();
+$('createBtn').onclick = () => {
+  if (S.view === 'profile' && S.profTab === 'communities') openCommModal();
+  else if (S.view === 'community' && S.comm) openComposer(S.comm);
+  else openComposer();
+};
 
 // Шапка ленты и кнопка «＋» прячутся, когда листаешь вниз, и возвращаются, когда листаешь вверх
 function watchBars(view) {
@@ -617,6 +672,7 @@ function setBars(view, show) {
 }
 watchBars($('vFeed'));
 watchBars($('vProfile'));
+watchBars($('vCommunity'));
 
 document.querySelectorAll('.nav-btn').forEach(b => b.onclick = () => {
   const target = b.dataset.go;
@@ -655,10 +711,69 @@ addEventListener('keydown', e => {
   if (!$('postModal').classList.contains('hidden')) closeComposer();
   if (!$('commModal').classList.contains('hidden')) closeCommModal();
 });
-function openComposer() {
+// community — сразу выбрать «от имени сообщества» (когда «＋» нажат на странице сообщества)
+function openComposer(community) {
   $('postModal').classList.remove('hidden');
-  updateCounter();
+  setPostAs(community || null);
   $('postInput').focus();
+}
+
+// --- от чьего имени пост: «Как пользователь» / «Как сообщество» ---
+document.querySelectorAll('#asSwitch button').forEach(b => b.onclick = () =>
+  b.dataset.as === 'user' ? setPostAs(null) : chooseCommunityMode());
+
+function setAsTab(tab) {
+  S.asTab = tab;
+  document.querySelectorAll('#asSwitch button').forEach(b => b.classList.toggle('on', b.dataset.as === tab));
+  $('asList').classList.toggle('hidden', tab !== 'community');
+  updateCounter();
+}
+
+// Сообщества, от имени которых можно публиковать (где я владелец или админ)
+async function ensureMyComms() {
+  if (S.myComms) return;
+  try { S.myComms = await api('/api/communities?user=' + S.me.id); } catch { S.myComms = null; }
+}
+
+async function chooseCommunityMode() {
+  setAsTab('community');
+  renderAsList();
+  await ensureMyComms();
+  if (S.asTab !== 'community') return;
+  if (!S.postAs && S.myComms && S.myComms.length) setPostAs(S.myComms[0]);
+  else renderAsList();
+}
+
+function setPostAs(c) {
+  S.postAs = c;
+  setAsTab(c ? 'community' : 'user');
+  const ava = $('postAva');
+  setAva(ava, c ? { id: c.id, name: c.name } : S.me, false);
+  ava.classList.toggle('sq', !!c);
+  $('postInput').placeholder = c ? `Пост от имени «${c.name}»` : 'Что нового?';
+  if (c) {
+    renderAsList();
+    if (!S.myComms) ensureMyComms().then(renderAsList);
+  }
+}
+
+function renderAsList() {
+  const box = $('asList');
+  box.replaceChildren();
+  const list = S.myComms || (S.postAs ? [S.postAs] : null);
+  if (!list) { box.append(el('div', 'as-empty', 'Загрузка…')); return; }
+  if (!list.length) {
+    box.append(el('div', 'as-empty', 'У вас пока нет сообществ — создайте их в профиле, во вкладке «Сообщества»'));
+    return;
+  }
+  for (const c of list) {
+    const it = el('button', 'as-item' + (S.postAs && S.postAs.id === c.id ? ' on' : ''));
+    const a = el('div', 'ava');
+    setAva(a, { id: c.id, name: c.name }, false);
+    it.append(a, el('span', null, c.name));
+    it.onclick = () => setPostAs(c);
+    box.append(it);
+  }
 }
 function closeComposer() {
   // черновик не теряем: если окно закрыли случайно, текст останется до следующего открытия
@@ -673,22 +788,34 @@ function updateCounter() {
   const left = POST_MAX - n;
   $('postCount').textContent = left < 500 ? left : '';
   $('postCount').classList.toggle('over', left < 0);
-  $('postBtn').disabled = !n || left < 0;
+  // в режиме «как сообщество» без выбранного сообщества публиковать нечего
+  $('postBtn').disabled = !n || left < 0 || (S.asTab === 'community' && !S.postAs);
 }
 async function publish() {
   const body = $('postInput').value.trim();
-  if (!body || body.length > POST_MAX) return;
+  if (!body || body.length > POST_MAX || $('postBtn').disabled) return;
   $('postBtn').disabled = true;
   try {
-    const p = await api('/api/posts', { method: 'POST', body: { body } });
+    const req = { body };
+    if (S.postAs) req.community_id = S.postAs.id;
+    const p = await api('/api/posts', { method: 'POST', body: req });
     $('postInput').value = '';
     $('postInput').style.height = '';
     closeComposer();
     cachePost(p);
     prependPost(FEED, p);
-    if (S.prof && S.prof.id === S.me.id) { prependPost(PROF, p); S.prof.posts++; renderProfile(); }
+    placeNewPost(p);
   } catch (e) { alert(e.message); }
   updateCounter();
+}
+
+// Куда положить новый пост: лента + профиль автора (личный пост) или страница сообщества
+function placeNewPost(p) {
+  if (p.community) {
+    if (S.comm && S.comm.id === p.community.id) { prependPost(COMM, p); S.comm.posts++; renderCommunity(); }
+  } else if (S.prof && S.prof.id === p.author.id) {
+    prependPost(PROF, p); S.prof.posts++; renderProfile();
+  }
 }
 
 // --- списки постов ---
@@ -742,13 +869,14 @@ function nearScreen(node) {
 const io = new IntersectionObserver(entries => {
   for (const e of entries) {
     if (!e.isIntersecting) continue;
-    const L = e.target.id === 'feedMore' ? FEED : PROF;
+    const L = { feedMore: FEED, profMore: PROF, commMore: COMM }[e.target.id];
     L.error = false;
     loadList(L);
   }
 }, { rootMargin: '600px' });
 io.observe($('feedMore'));
 io.observe($('profMore'));
+io.observe($('commMore'));
 
 function prependPost(L, p) {
   if (L.ids.includes(p.id)) return;
@@ -757,21 +885,30 @@ function prependPost(L, p) {
   updateLoader(L);
 }
 
+// Могу ли я управлять сообществом (удалять его посты)
+function canManage(cid) {
+  return (S.comm && S.comm.id === cid && !!S.comm.role) || (!!S.myComms && S.myComms.some(c => c.id === cid));
+}
+
 function postNode(p) {
   const art = el('article', 'post');
   art.dataset.post = p.id;
-  const openAuthor = () => go('u/' + encodeURIComponent(p.author.username));
-  const ava = el('div', 'ava');
-  setAva(ava, p.author, false);
+  // пост сообщества показываем от имени сообщества, а не автора
+  const c = p.community;
+  const who = c ? { id: c.id, name: c.name, handle: c.slug, verified: c.verified }
+                : { id: p.author.id, name: p.author.name, handle: p.author.username, verified: p.author.verified };
+  const openAuthor = () => go((c ? 'c/' : 'u/') + encodeURIComponent(who.handle));
+  const ava = el('div', 'ava' + (c ? ' sq' : ''));
+  setAva(ava, who, false);
   ava.onclick = openAuthor;
   const main = el('div', 'post-main');
   const head = el('div', 'post-head');
-  const name = el('span', 'post-name', p.author.name);
+  const name = el('span', 'post-name', who.name);
   name.onclick = openAuthor;
   head.append(name);
-  if (p.author.verified) head.append(verifiedBadge());
-  head.append(el('span', 'post-sub', '@' + p.author.username + ' · ' + postTime(p.created)));
-  if (p.author.id === S.me.id) {
+  if (who.verified) head.append(verifiedBadge());
+  head.append(el('span', 'post-sub', '@' + who.handle + ' · ' + postTime(p.created)));
+  if (p.author.id === S.me.id || (c && canManage(c.id))) {
     const del = el('button', 'post-del');
     del.title = 'Удалить';
     del.innerHTML = ICON.trash;
@@ -834,12 +971,15 @@ async function deletePost(id) {
 function removePost(id) {
   const p = S.posts.get(id);
   S.posts.delete(id);
-  for (const L of [FEED, PROF]) {
+  for (const L of [FEED, PROF, COMM]) {
     const i = L.ids.indexOf(id);
     if (i >= 0) { L.ids.splice(i, 1); updateLoader(L); }
   }
   document.querySelectorAll(`[data-post="${id}"]`).forEach(n => n.remove());
-  if (p && S.prof && S.prof.id === p.author.id && S.prof.posts > 0) { S.prof.posts--; renderProfile(); }
+  if (!p) return;
+  if (p.community) {
+    if (S.comm && S.comm.id === p.community.id && S.comm.posts > 0) { S.comm.posts--; renderCommunity(); }
+  } else if (S.prof && S.prof.id === p.author.id && S.prof.posts > 0) { S.prof.posts--; renderProfile(); }
 }
 
 // Пост пришёл по WebSocket
@@ -848,7 +988,15 @@ function onNewPost(p) {
   cachePost(p);
   if (p.author.id === S.me.id) prependPost(FEED, p); // свой пост с другого устройства
   else if (FEED.loadedOnce) { S.freshCount++; updateFresh(); }
-  if (S.prof && S.prof.id === p.author.id) { prependPost(PROF, p); S.prof.posts++; renderProfile(); }
+  placeNewPost(p);
+}
+
+// Сообщество удалено: убираем его посты отовсюду
+function onCommunityDeleted(id) {
+  for (const p of [...S.posts.values()]) if (p.community && p.community.id === id) removePost(p.id);
+  if (S.myComms) S.myComms = S.myComms.filter(c => c.id !== id);
+  if (S.comms) { S.comms = S.comms.filter(c => c.id !== id); renderCommunities(); }
+  if (S.comm && S.comm.id === id) { S.comm = null; if (S.view === 'community') go('feed'); }
 }
 
 // ================= Профиль =================
@@ -931,7 +1079,123 @@ function commNode(c) {
   meta.append(name, el('div', 'comm-slug', '@' + c.slug));
   if (c.description) meta.append(el('div', 'comm-desc', c.description));
   it.append(ava, meta);
+  it.onclick = () => go('c/' + encodeURIComponent(c.slug));
   return it;
+}
+
+// ================= Страница сообщества =================
+async function showCommunity(slug) {
+  setView('community', '');
+  const req = ++S.commReq;
+  const same = S.comm && sameUser(S.comm.slug, slug);
+  if (!same) {
+    S.comm = null;
+    COMM.gen++; COMM.ids = []; COMM.more = false; COMM.busy = false;
+    $('commList').replaceChildren();
+    $('commMore').textContent = '';
+    $('commHead').replaceChildren(el('div', 'loader', 'Загрузка…'));
+    $('vCommunity').scrollTop = 0;
+  }
+  try {
+    const c = await api('/api/community?s=' + encodeURIComponent(slug));
+    if (req !== S.commReq) return;
+    S.comm = c;
+    renderCommunity();
+    updateFab();
+    if (!same) loadList(COMM, true);
+  } catch (e) {
+    if (req === S.commReq) $('commHead').replaceChildren(el('div', 'empty', e.message));
+  }
+}
+$('commBack').onclick = () => navDepth > 0 ? history.back() : go('feed');
+
+function renderCommunity() {
+  const c = S.comm;
+  if (!c) return;
+  const box = $('commHead');
+  box.replaceChildren();
+  const top = el('div', 'prof-top');
+  const ava = el('div', 'ava big sq');
+  setAva(ava, { id: c.id, name: c.name }, false);
+  const btns = el('div', 'prof-btns');
+  if (c.role === 'owner') { // владелец видит управление вместо подписки
+    const edit = el('button', 'btn small ghost', 'Редактировать');
+    edit.onclick = editCommunity;
+    btns.append(edit);
+    if (!c.official) {
+      const del = el('button', 'btn small ghost danger', 'Удалить');
+      del.onclick = deleteCommunity;
+      btns.append(del);
+    }
+  } else {
+    const fol = el('button', 'btn small' + (c.i_follow ? ' ghost' : ''), c.i_follow ? 'Вы подписаны' : 'Подписаться');
+    fol.onclick = () => toggleCommFollow(fol);
+    btns.append(fol);
+  }
+  top.append(ava, btns);
+  const name = el('div', 'prof-name', c.name);
+  if (c.verified) name.append(verifiedBadge());
+  box.append(top, name, el('div', 'prof-user', '@' + c.slug
+    + (c.role === 'owner' ? ' · вы владелец' : c.role === 'admin' ? ' · вы администратор' : '')));
+  if (c.description) box.append(el('div', 'prof-bio', c.description));
+  const stats = el('div', 'prof-stats');
+  const stat = (n, forms) => { const s = el('span'); s.append(el('b', null, n), ' ' + plural(n, forms)); return s; };
+  stats.append(
+    stat(c.posts, ['пост', 'поста', 'постов']),
+    stat(c.followers, ['подписчик', 'подписчика', 'подписчиков']));
+  box.append(stats);
+}
+
+function editCommunity() {
+  const c = S.comm, box = $('commHead');
+  box.replaceChildren();
+  const name = el('input', 'field');
+  name.value = c.name; name.maxLength = 64; name.placeholder = 'Название';
+  const desc = el('textarea', 'field');
+  desc.value = c.description || ''; desc.maxLength = 300; desc.rows = 3; desc.placeholder = 'Описание';
+  const err = el('div', 'err');
+  const save = el('button', 'btn small', 'Сохранить');
+  const cancel = el('button', 'btn small ghost', 'Отмена');
+  cancel.onclick = renderCommunity;
+  save.onclick = async () => {
+    save.disabled = true;
+    try {
+      const r = await api('/api/community/update', { method: 'POST', body: { id: c.id, name: name.value.trim(), description: desc.value.trim() } });
+      c.name = r.name; c.description = r.description;
+      for (const list of [S.comms, S.myComms]) {
+        const x = list && list.find(x => x.id === c.id);
+        if (x) { x.name = r.name; x.description = r.description; }
+      }
+      if (S.comms) renderCommunities();
+      renderCommunity();
+    } catch (e) { err.textContent = e.message; save.disabled = false; }
+  };
+  const row = el('div', 'prof-btns');
+  row.style.justifyContent = 'flex-start';
+  row.append(save, cancel);
+  box.append(el('div', 'prof-name', 'Редактирование'), el('div', 'prof-user', '@' + c.slug), el('div', null, ' '), name, desc, row, err);
+  name.focus();
+}
+
+async function deleteCommunity() {
+  const c = S.comm;
+  if (!confirm(`Удалить сообщество «${c.name}»?\nВсе его посты тоже будут удалены. Это нельзя отменить.`)) return;
+  try {
+    await api('/api/community/delete', { method: 'POST', body: { id: c.id } });
+    onCommunityDeleted(c.id);
+    go('u/' + encodeURIComponent(S.me.username));
+  } catch (e) { alert(e.message); }
+}
+
+async function toggleCommFollow(btn) {
+  const c = S.comm;
+  btn.disabled = true;
+  try {
+    const r = await api('/api/community/follow', { method: 'POST', body: { id: c.id, on: !c.i_follow } });
+    c.i_follow = r.following;
+    c.followers = r.followers;
+  } catch (e) { alert(e.message); }
+  if (S.comm === c) renderCommunity();
 }
 
 // --- создание сообщества ---
@@ -952,6 +1216,7 @@ $('cBtn').onclick = async () => {
       name: $('cName').value.trim(), slug: $('cSlug').value.trim(), description: $('cDesc').value.trim() } });
     $('cName').value = $('cSlug').value = $('cDesc').value = '';
     closeCommModal();
+    if (S.myComms) S.myComms.push(c); // теперь можно публиковать и от его имени
     if (S.prof && S.prof.id === S.me.id) {
       if (S.comms) { S.comms.push(c); renderCommunities(); }
       setProfTab('communities');
@@ -1128,6 +1393,7 @@ function onEvent(ev) {
       break;
     case 'post': onNewPost(ev.post); break;
     case 'post_del': removePost(ev.p); break;
+    case 'comm_del': onCommunityDeleted(ev.id); break;
     case 'likes': {
       const p = S.posts.get(ev.p);
       if (p) { p.likes = ev.n; repaintPost(ev.p); }
