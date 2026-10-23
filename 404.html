@@ -155,7 +155,7 @@ svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:2; s
 
 // ================= Настройки =================
 // Адрес сервера на Amvera (поменяй на свой после деплоя).
-const PROD_SERVER = 'https://ИМЯ-ПРОЕКТА.amvera.io';
+const PROD_SERVER = 'https://dio-myproj1.msk1.amvera.tech';
 const IS_LOCAL = ['localhost', '127.0.0.1', ''].includes(location.hostname);
 // Для отладки адрес можно переопределить: localStorage.dio_server = 'http://...'
 const SERVER = (store('dio_server') || (IS_LOCAL ? 'http://localhost:8080' : PROD_SERVER)).replace(/\/$/, '');
