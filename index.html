@@ -133,6 +133,20 @@ svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:2; s
 .prof-stats { display:flex; gap:18px; margin-top:12px; color:var(--muted); font-size:14px; flex-wrap:wrap }
 .prof-stats b { color:var(--text) }
 .prof textarea.field { min-height:80px }
+.ptabs { display:flex; border-bottom:1px solid var(--line) }
+.ptabs button { flex:1; padding:13px; color:var(--muted); font-weight:600; position:relative }
+.ptabs button:hover { background:var(--panel2) }
+.ptabs button.on { color:var(--text) }
+.ptabs button.on::after { content:""; position:absolute; left:50%; bottom:-1px; width:64px; margin-left:-32px; height:3px; border-radius:3px; background:var(--accent) }
+.comm { display:flex; gap:12px; padding:14px 16px; border-bottom:1px solid var(--line); align-items:flex-start }
+.comm .ava { border-radius:14px }
+.comm-name { display:flex; align-items:center; gap:6px; min-width:0 }
+.comm-name .title { font-weight:700 }
+.comm-slug { color:var(--muted); font-size:14px }
+.comm-desc { margin-top:4px; font-size:14px; white-space:pre-wrap; overflow-wrap:anywhere }
+.role { font-size:12px; font-weight:600; padding:2px 8px; border-radius:10px; background:var(--line); color:var(--muted); flex-shrink:0; margin-left:auto }
+.role.owner { background:rgba(91,140,255,.15); color:var(--accent) }
+.sheet-body { padding:16px; overflow-y:auto }
 
 /* ---------- сообщения ---------- */
 #side { width:340px; flex-shrink:0; border-right:1px solid var(--line); display:flex; flex-direction:column; background:var(--panel) }
@@ -199,7 +213,7 @@ svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:2; s
 [data-device=phone] #postInput { font-size:16px } /* 16px — чтобы iOS не зумил поле */
 [data-device=phone] .modal { padding:0 }
 [data-device=phone] .sheet { max-width:none; max-height:none; height:100dvh; border:0; border-radius:0; padding-top:env(safe-area-inset-top); padding-bottom:env(safe-area-inset-bottom) }
-[data-device=phone] .new-post { flex:1 }
+[data-device=phone] .new-post, [data-device=phone] .sheet-body { flex:1 }
 [data-device=phone] #input { font-size:16px }
 [data-device=phone] .ava.big { width:76px; height:76px; font-size:30px }
 [data-device=phone] .prof-btns .btn.small { padding:6px 12px }
@@ -301,8 +315,15 @@ svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:2; s
           <div style="height:8px"></div>
         </div>
         <div class="prof" id="profHead"></div>
-        <div id="profList"></div>
-        <div class="loader" id="profMore"></div>
+        <div class="ptabs" id="profTabs">
+          <button data-tab="posts" class="on">Посты</button>
+          <button data-tab="communities">Сообщества</button>
+        </div>
+        <div id="profPostsBox">
+          <div id="profList"></div>
+          <div class="loader" id="profMore"></div>
+        </div>
+        <div id="profComms" class="hidden"></div>
       </div>
     </section>
   </div>
@@ -322,6 +343,25 @@ svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:2; s
     <div class="new-post-foot">
       <span class="counter" id="postCount"></span>
       <button class="btn small" id="postBtn" disabled>Опубликовать</button>
+    </div>
+  </div>
+</div>
+
+<!-- Окно создания сообщества -->
+<div class="modal hidden" id="commModal">
+  <div class="sheet">
+    <div class="sheet-head">
+      <button class="icon-btn" id="commClose" title="Закрыть"><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+      Новое сообщество
+    </div>
+    <div class="sheet-body">
+      <input class="field" id="cName" placeholder="Название" maxlength="64" autocomplete="off">
+      <input class="field" id="cSlug" placeholder="Адрес: латиница, цифры и _ (например, my_club)" maxlength="33" autocomplete="off" autocapitalize="off" spellcheck="false">
+      <textarea class="field" id="cDesc" rows="3" placeholder="Описание (необязательно)" maxlength="300"></textarea>
+      <div class="err" id="cErr"></div>
+    </div>
+    <div class="new-post-foot">
+      <button class="btn small" id="cBtn">Создать</button>
     </div>
   </div>
 </div>
@@ -545,9 +585,38 @@ function setView(name, navKey) {
   $('vMessages').classList.toggle('on', name === 'messages');
   $('vProfile').classList.toggle('on', name === 'profile');
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('on', b.dataset.go === navKey));
-  $('createBtn').classList.toggle('hidden', name !== 'feed');
+  updateFab();
   if (name !== 'messages') leaveChat();
 }
+
+// Кнопка «＋»: в ленте — новый пост; в своём профиле — новый пост или новое сообщество (по вкладке)
+function updateFab() {
+  const fab = $('createBtn');
+  const show = S.view === 'feed' || (S.view === 'profile' && S.profMine);
+  fab.classList.toggle('hidden', !show);
+  const view = S.view === 'feed' ? $('vFeed') : $('vProfile');
+  fab.classList.toggle('away', view.classList.contains('bars-hidden'));
+  fab.title = S.view === 'profile' && S.profTab === 'communities' ? 'Создать сообщество' : 'Создать пост';
+}
+$('createBtn').onclick = () => S.view === 'profile' && S.profTab === 'communities' ? openCommModal() : openComposer();
+
+// Шапка ленты и кнопка «＋» прячутся, когда листаешь вниз, и возвращаются, когда листаешь вверх
+function watchBars(view) {
+  let last = 0;
+  view.addEventListener('scroll', () => {
+    const y = view.scrollTop, d = y - last;
+    if (y < 60) setBars(view, true);
+    else if (d > 6) setBars(view, false);
+    else if (d < -6) setBars(view, true);
+    last = y;
+  }, { passive: true });
+}
+function setBars(view, show) {
+  view.classList.toggle('bars-hidden', !show);
+  if (S.view && view.id === 'v' + S.view[0].toUpperCase() + S.view.slice(1)) $('createBtn').classList.toggle('away', !show);
+}
+watchBars($('vFeed'));
+watchBars($('vProfile'));
 
 document.querySelectorAll('.nav-btn').forEach(b => b.onclick = () => {
   const target = b.dataset.go;
@@ -567,19 +636,6 @@ function showFeed() {
 $('newPosts').onclick = showFresh;
 $('brand').onclick = () => $('vFeed').scrollTo({ top: 0, behavior: 'smooth' });
 
-// Шапка с логотипом и кнопка «+» прячутся, когда листаешь вниз, и возвращаются, когда листаешь вверх
-let lastFeedY = 0;
-$('vFeed').addEventListener('scroll', () => {
-  const y = $('vFeed').scrollTop, d = y - lastFeedY;
-  if (y < 60) setFeedBars(true);
-  else if (d > 6) setFeedBars(false);
-  else if (d < -6) setFeedBars(true);
-  lastFeedY = y;
-}, { passive: true });
-function setFeedBars(show) {
-  $('vFeed').classList.toggle('bars-hidden', !show);
-  $('createBtn').classList.toggle('away', !show);
-}
 function showFresh() {
   S.freshCount = 0; updateFresh();
   $('vFeed').scrollTo({ top: 0 });
@@ -591,11 +647,14 @@ function updateFresh() {
   $('newPosts').textContent = S.scope === 'all' ? `↑ Новые посты: ${n}` : '↑ Есть новые посты';
 }
 
-// Новый пост: окно по кнопке «Создать»
-$('createBtn').onclick = openComposer;
+// Новый пост: окно по кнопке «＋»
 $('postClose').onclick = closeComposer;
 $('postModal').addEventListener('mousedown', e => { if (e.target === $('postModal')) closeComposer(); });
-addEventListener('keydown', e => { if (e.key === 'Escape' && !$('postModal').classList.contains('hidden')) closeComposer(); });
+addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  if (!$('postModal').classList.contains('hidden')) closeComposer();
+  if (!$('commModal').classList.contains('hidden')) closeCommModal();
+});
 function openComposer() {
   $('postModal').classList.remove('hidden');
   updateCounter();
@@ -795,6 +854,7 @@ function onNewPost(p) {
 // ================= Профиль =================
 async function showProfile(username) {
   const mine = sameUser(username, S.me.username);
+  S.profMine = mine;
   setView('profile', mine ? 'me' : '');
   $('profBack').classList.toggle('hidden', mine || navDepth === 0);
   $('profTitle').textContent = mine ? 'Мой профиль' : 'Профиль';
@@ -802,6 +862,9 @@ async function showProfile(username) {
   const same = S.prof && sameUser(S.prof.username, username);
   if (!same) {
     S.prof = null;
+    S.comms = null;
+    $('profComms').replaceChildren();
+    setProfTab('posts');
     PROF.gen++; PROF.ids = []; PROF.more = false; PROF.busy = false;
     $('profList').replaceChildren();
     $('profMore').textContent = '';
@@ -819,6 +882,86 @@ async function showProfile(username) {
   }
 }
 $('profBack').onclick = () => history.back();
+
+// --- вкладки профиля: Посты / Сообщества ---
+document.querySelectorAll('#profTabs button').forEach(b => b.onclick = () => setProfTab(b.dataset.tab));
+function setProfTab(tab) {
+  S.profTab = tab;
+  document.querySelectorAll('#profTabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
+  $('profPostsBox').classList.toggle('hidden', tab !== 'posts');
+  $('profComms').classList.toggle('hidden', tab !== 'communities');
+  updateFab();
+  if (tab === 'communities' && S.prof && !S.comms) loadCommunities();
+}
+
+async function loadCommunities() {
+  const req = S.profReq, u = S.prof;
+  $('profComms').replaceChildren(el('div', 'loader', 'Загрузка…'));
+  try {
+    const list = await api('/api/communities?user=' + u.id);
+    if (req !== S.profReq) return;
+    S.comms = list;
+    renderCommunities();
+  } catch (e) {
+    if (req === S.profReq) $('profComms').replaceChildren(el('div', 'empty', e.message));
+  }
+}
+
+function renderCommunities() {
+  const box = $('profComms');
+  box.replaceChildren();
+  if (!S.comms.length) {
+    box.append(el('div', 'empty', S.profMine
+      ? 'У вас пока нет сообществ. Нажмите ＋, чтобы создать первое'
+      : 'Пользователь пока не владеет сообществами и не администрирует их'));
+    return;
+  }
+  for (const c of S.comms) box.append(commNode(c));
+}
+
+function commNode(c) {
+  const it = el('div', 'comm');
+  const ava = el('div', 'ava');
+  setAva(ava, { id: c.id, name: c.name }, false);
+  const meta = el('div', 'meta');
+  const name = el('div', 'comm-name');
+  name.append(el('span', 'title', c.name));
+  if (c.verified) name.append(verifiedBadge());
+  name.append(el('span', 'role' + (c.role === 'owner' ? ' owner' : ''), c.role === 'owner' ? 'Владелец' : 'Админ'));
+  meta.append(name, el('div', 'comm-slug', '@' + c.slug));
+  if (c.description) meta.append(el('div', 'comm-desc', c.description));
+  it.append(ava, meta);
+  return it;
+}
+
+// --- создание сообщества ---
+$('commClose').onclick = closeCommModal;
+$('commModal').addEventListener('mousedown', e => { if (e.target === $('commModal')) closeCommModal(); });
+function openCommModal() {
+  $('cErr').textContent = '';
+  $('commModal').classList.remove('hidden');
+  $('cName').focus();
+}
+function closeCommModal() { $('commModal').classList.add('hidden'); }
+
+$('cBtn').onclick = async () => {
+  $('cBtn').disabled = true;
+  $('cErr').textContent = '';
+  try {
+    const c = await api('/api/communities', { method: 'POST', body: {
+      name: $('cName').value.trim(), slug: $('cSlug').value.trim(), description: $('cDesc').value.trim() } });
+    $('cName').value = $('cSlug').value = $('cDesc').value = '';
+    closeCommModal();
+    if (S.prof && S.prof.id === S.me.id) {
+      if (S.comms) { S.comms.push(c); renderCommunities(); }
+      setProfTab('communities');
+    }
+  } catch (e) {
+    $('cErr').textContent = e instanceof TypeError ? 'Сервер недоступен' : e.message;
+  } finally {
+    $('cBtn').disabled = false;
+  }
+};
 
 function renderProfile() {
   const u = S.prof;
