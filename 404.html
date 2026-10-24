@@ -901,7 +901,7 @@ const EN = {
   'Пароль изменён. На других устройствах нужно будет войти заново.': 'Password changed. Other devices will need to log in again.',
   'Показать в профиле': 'Show on profile', 'Скрыть из профиля': 'Hide from profile', 'Вернуть на площадку': 'Return to marketplace',
   'Редактирование': 'Editing', 'Верификация аккаунта': 'Account verification', 'Добавить фото или видео': 'Add photos or videos',
-  'Забыл пароль': 'Forgot password', 'Почта для восстановления': 'Recovery email', 'Переключить тему': 'Switch theme',
+  'Забыл пароль': 'Forgot password', 'Юзернейм': 'Username', 'Почта для восстановления': 'Recovery email', 'Переключить тему': 'Switch theme',
   'На эту почту придёт код, если вы забудете пароль. Её никто не видит.': "We'll send a code to this email if you forget your password. Nobody else can see it.",
   'Почта': 'Email', 'Почта сохранена': 'Email saved', 'Почта отвязана': 'Email removed',
   'Восстановление пароля': 'Password recovery',
@@ -1138,7 +1138,7 @@ function setView(name, navKey) {
 function updateFab() {
   const fab = $('createBtn');
   const show = S.view === 'feed'
-    || (S.view === 'profile' && S.profMine)
+    || (S.view === 'profile' && S.profMine && !S.profEditing)
     || (S.view === 'community' && S.comm && !!S.comm.role);
   fab.classList.toggle('hidden', !show);
   const view = { feed: 'vFeed', profile: 'vProfile', community: 'vCommunity' }[S.view];
@@ -1698,6 +1698,7 @@ function onCommunityDeleted(id) {
 async function showProfile(username) {
   const mine = sameUser(username, S.me.username);
   S.profMine = mine;
+  if (S.profEditing) setProfEditing(false);
   setView('profile', mine ? 'me' : '');
   $('profBack').classList.toggle('hidden', mine || navDepth === 0);
   $('profGear').classList.toggle('hidden', !mine);
@@ -1924,9 +1925,18 @@ $('cBtn').onclick = async () => {
   }
 };
 
+function setProfEditing(on) {
+  S.profEditing = on;
+  $('profTabs').classList.toggle('hidden', on);
+  if (on) { $('profPostsBox').classList.add('hidden'); $('profComms').classList.add('hidden'); }
+  else setProfTab(S.profTab || 'posts');
+  updateFab();
+}
+
 function renderProfile() {
   const u = S.prof;
   if (!u) return;
+  if (S.profEditing) setProfEditing(false);
   const me = u.id === S.me.id;
   const box = $('profHead');
   box.replaceChildren();
@@ -1972,6 +1982,7 @@ function renderProfile() {
 
 function editProfile() {
   const u = S.prof, box = $('profHead');
+  setProfEditing(true);
   box.replaceChildren();
   const name = el('input', 'field');
   name.value = u.name; name.maxLength = 64; name.placeholder = 'Имя';
@@ -2007,10 +2018,12 @@ function editProfile() {
   const row = el('div', 'prof-btns');
   row.style.justifyContent = 'flex-start';
   row.append(save, cancel);
-  box.append(el('div', 'prof-name', L('Редактирование', 'Editing')), el('div', null, ' '), name, uname);
-  box.append(Object.assign(el('div', 'extra-names', 'Юзернейм — это и ваш логин для входа. Дополнительные юзернеймы для входа не подходят.'), { style: 'margin:-4px 0 8px' }));
+  box.append(el('div', 'prof-name', L('Редактирование', 'Editing')), el('div', null, '\u00a0'), name, bio);
+  // юзернеймы — в самом низу формы
+  box.append(el('div', 'field-label', 'Юзернейм'), uname);
+  box.append(Object.assign(el('div', 'extra-names', 'Юзернейм — это и ваш логин для входа. Дополнительные юзернеймы для входа не подходят.'), { style: 'margin:-4px 0 10px' }));
   if (u.my_usernames && u.my_usernames.length) box.append(el('div', 'field-label', 'Дополнительные юзернеймы'), usernameChips(u));
-  box.append(more, bio, row, err);
+  box.append(more, row, err);
   name.focus();
 }
 
