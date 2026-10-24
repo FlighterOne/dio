@@ -14,6 +14,12 @@
   // iPad/планшеты на iPadOS притворяются Mac — тач-экран с узкой стороной < 600px считаем телефоном
   else if (matchMedia('(pointer:coarse)').matches && Math.min(screen.width, screen.height) < 600) phone = true;
   document.documentElement.dataset.device = phone ? 'phone' : 'pc';
+  // Тема и язык из настроек клиента — тоже до отрисовки
+  var theme = 'dark', lang = 'ru';
+  try { theme = localStorage.getItem('divy_theme') || 'dark'; lang = localStorage.getItem('divy_lang') || 'ru'; } catch (e) {}
+  document.documentElement.dataset.theme = theme === 'light' ? 'light' : 'dark';
+  document.documentElement.lang = lang === 'en' ? 'en' : 'ru';
+  if (theme === 'light') document.querySelector('meta[name=theme-color]').content = '#f4f5f7';
 })();
 </script>
 <style>
@@ -21,7 +27,18 @@
   --bg:#0f1115; --panel:#161a21; --panel2:#1d222b; --line:#262c37;
   --text:#e8ebf0; --muted:#8a93a3; --accent:#5b8cff;
   --mine:#2b4a8f; --theirs:#1f252f; --danger:#ff6b6b; --ok:#3ecf8e;
+  --bar:rgba(15,17,21,.86); --msg-meta:rgba(255,255,255,.55); --tick-read:#9fc0ff; --mine-text:#e8ebf0;
 }
+/* светлая тема */
+:root[data-theme=light] {
+  --bg:#f4f5f7; --panel:#ffffff; --panel2:#eef0f3; --line:#dfe2e8;
+  --text:#14171c; --muted:#677080; --accent:#3d6ef0;
+  --mine:#3d6ef0; --theirs:#ffffff; --danger:#e5484d; --ok:#22a06b;
+  --bar:rgba(255,255,255,.88); --msg-meta:rgba(255,255,255,.75); --tick-read:#ffffff; --mine-text:#ffffff;
+}
+:root[data-theme=light] .msg:not(.mine) .info { color:var(--muted) }
+:root[data-theme=light] .msg:not(.mine) { border:1px solid var(--line) }
+:root[data-theme=light] .modal { background:rgba(20,23,28,.35) }
 * { box-sizing:border-box; margin:0; padding:0 }
 html, body { height:100% }
 body { background:var(--bg); color:var(--text); font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; overflow:hidden; -webkit-tap-highlight-color:transparent; -webkit-text-size-adjust:100% }
@@ -74,12 +91,12 @@ svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:2; s
 .view.on { display:block }
 #vMessages.on { display:flex; overflow:hidden }
 .col { max-width:640px; margin:0 auto; min-height:100%; border-left:1px solid var(--line); border-right:1px solid var(--line) }
-.top { position:sticky; top:0; z-index:5; background:rgba(15,17,21,.86); -webkit-backdrop-filter:blur(12px); backdrop-filter:blur(12px); border-bottom:1px solid var(--line); padding-top:env(safe-area-inset-top) }
+.top { position:sticky; top:0; z-index:5; background:var(--bar); -webkit-backdrop-filter:blur(12px); backdrop-filter:blur(12px); border-bottom:1px solid var(--line); padding-top:env(safe-area-inset-top) }
 .top h1 { font-size:20px; padding:14px 16px 4px; display:flex; align-items:center; gap:8px }
 .top h1 .icon-btn { margin:-6px 0 -6px -8px }
 
 /* ---------- лента ---------- */
-.feed-head { position:sticky; top:0; z-index:6; height:calc(58px + env(safe-area-inset-top)); padding:env(safe-area-inset-top) 16px 0; display:flex; align-items:center; background:rgba(15,17,21,.86); -webkit-backdrop-filter:blur(12px); backdrop-filter:blur(12px); border-bottom:1px solid var(--line); transition:transform .25s ease }
+.feed-head { position:sticky; top:0; z-index:6; height:calc(58px + env(safe-area-inset-top)); padding:env(safe-area-inset-top) 16px 0; display:flex; align-items:center; background:var(--bar); -webkit-backdrop-filter:blur(12px); backdrop-filter:blur(12px); border-bottom:1px solid var(--line); transition:transform .25s ease }
 .brand { font-size:30px; font-weight:800; letter-spacing:-1.5px; user-select:none; cursor:pointer; line-height:1 }
 .brand span { color:var(--accent) }
 #vFeed.bars-hidden .feed-head { transform:translateY(-100%) }
@@ -204,6 +221,19 @@ svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:2; s
 .verified.ghost { background:none; border:1.5px dashed var(--muted); color:var(--muted); opacity:.55; cursor:pointer; font-size:12px; font-weight:800; line-height:1 }
 .prof-name .verified.ghost { font-size:13px }
 .verified.ghost:hover { opacity:1; border-color:var(--accent); color:var(--accent) }
+/* настройки */
+.set-title { font-weight:700; font-size:16px; margin:4px 0 10px }
+.set-sub { color:var(--muted); font-size:13px; font-weight:600; margin:-4px 0 8px }
+.err.ok { color:var(--ok) }
+
+/* доп. юзернеймы в редактировании профиля: закруглённые контуры с кнопками */
+.chips { display:flex; flex-wrap:wrap; gap:8px; margin:0 0 10px }
+.chip { display:inline-flex; align-items:center; gap:2px; border:1.5px solid var(--line); border-radius:20px; padding:2px 3px 2px 12px; font-size:14px; font-weight:600 }
+.chip.off .chip-name { opacity:.45 }
+.chip button { width:28px; height:28px; border-radius:50%; display:grid; place-items:center; color:var(--muted) }
+.chip button svg { width:16px; height:16px }
+.chip button:hover { background:var(--panel2); color:var(--text) }
+.chip button.x:hover { color:var(--danger) }
 .field-label { font-size:13px; color:var(--muted); font-weight:600; margin:4px 0 6px }
 .seg-wrap { flex-wrap:wrap; gap:3px }
 .seg-wrap button { flex:1 1 auto; font-size:14px }
@@ -260,9 +290,9 @@ svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:2; s
 #msgs { flex:1; overflow-y:auto; padding:12px 12px 6px; display:flex; flex-direction:column; gap:3px; overscroll-behavior:contain }
 .day { align-self:center; color:var(--muted); font-size:12px; background:var(--panel2); padding:3px 10px; border-radius:10px; margin:10px 0 6px }
 .msg { max-width:min(75%, 560px); padding:7px 10px 5px; border-radius:14px; background:var(--theirs); align-self:flex-start; white-space:pre-wrap; overflow-wrap:anywhere }
-.msg.mine { background:var(--mine); align-self:flex-end }
-.msg .info { float:right; margin:6px 0 -3px 10px; font-size:11px; color:rgba(255,255,255,.55); display:inline-flex; gap:3px; align-items:center; white-space:nowrap }
-.tick.read { color:#9fc0ff }
+.msg.mine { background:var(--mine); color:var(--mine-text); align-self:flex-end }
+.msg .info { float:right; margin:6px 0 -3px 10px; font-size:11px; color:var(--msg-meta); display:inline-flex; gap:3px; align-items:center; white-space:nowrap }
+.tick.read { color:var(--tick-read) }
 .msg.pending { opacity:.75 }
 .msg.failed { cursor:pointer }
 .msg.failed .info { color:var(--danger) }
@@ -401,6 +431,10 @@ svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:2; s
           <h1>
             <button class="icon-btn hidden" id="profBack" title="Назад"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
             <span id="profTitle">Профиль</span>
+            <!-- настройки клиента: только в своём профиле -->
+            <button class="icon-btn hidden" id="profGear" title="Настройки" style="margin-left:auto">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            </button>
           </h1>
           <div style="height:8px"></div>
         </div>
@@ -516,6 +550,35 @@ svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:2; s
   </div>
 </div>
 
+<!-- Настройки клиента -->
+<div class="modal hidden" id="setModal">
+  <div class="sheet">
+    <div class="sheet-head">
+      <button class="icon-btn" id="setClose" title="Закрыть"><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+      Настройки
+    </div>
+    <div class="sheet-body">
+      <div class="set-title">Тема</div>
+      <div class="seg" id="setTheme">
+        <button type="button" data-v="dark">Тёмная</button>
+        <button type="button" data-v="light">Светлая</button>
+      </div>
+      <div class="set-title">Язык</div>
+      <div class="seg" id="setLang">
+        <button type="button" data-v="ru">Русский</button>
+        <button type="button" data-v="en">English</button>
+      </div>
+      <div class="set-title">Конфиденциальность</div>
+      <div class="set-sub">Смена пароля</div>
+      <input class="field" id="pwOld" type="password" placeholder="Текущий пароль" autocomplete="current-password">
+      <input class="field" id="pwNew" type="password" placeholder="Новый пароль (минимум 8 символов)" autocomplete="new-password">
+      <input class="field" id="pwNew2" type="password" placeholder="Повторите новый пароль" autocomplete="new-password">
+      <button class="btn" id="pwSave">Сменить пароль</button>
+      <div class="err" id="pwErr"></div>
+    </div>
+  </div>
+</div>
+
 <!-- Заявка на верификацию -->
 <div class="modal hidden" id="verifModal">
   <div class="sheet">
@@ -589,6 +652,9 @@ const VIDEO_MAX_SECS = 60;
 
 const ICON = {
   heart: '<svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8z"/></svg>',
+  eye: '<svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>',
+  eyeOff: '<svg viewBox="0 0 24 24"><path d="M17.9 17.9A10 10 0 0 1 12 20C5 20 1 12 1 12a18 18 0 0 1 5.1-5.9M9.9 4.2A9 9 0 0 1 12 4c7 0 11 8 11 8a18 18 0 0 1-2.2 3.2M14.1 14.1a3 3 0 1 1-4.2-4.2"/><path d="M1 1l22 22"/></svg>',
+  cross: '<svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>',
   trash: '<svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>',
 };
 
@@ -648,6 +714,131 @@ function el(tag, cls, text) {
   return e;
 }
 const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+// ================= Язык интерфейса (русский / английский) =================
+// Статичные надписи переводятся словарём EN автоматически (в том числе всё, что появляется позже —
+// за этим следит MutationObserver). Надписи с подстановками переводятся в коде через L(ru, en).
+// Пользовательский текст (посты, имена, сообщения) не переводится.
+const LANG = document.documentElement.lang === 'en' ? 'en' : 'ru';
+const L = (ru, en) => LANG === 'en' ? en : ru;
+const LOCALE = L('ru-RU', 'en-US');
+const EN_PLURAL = {
+  'постов': ['post', 'posts'], 'подписчиков': ['follower', 'followers'], 'подписок': ['following', 'following'],
+  'участников': ['participant', 'participants'],
+};
+const EN = {
+  'социальная сеть': 'social network', 'Вход': 'Log in', 'Регистрация': 'Sign up', 'Логин': 'Username', 'Пароль': 'Password',
+  'Имя (его видят другие)': 'Name (visible to others)', 'Войти': 'Log in', 'Создать аккаунт': 'Create account',
+  'Логин: 5–20 символов (латиница, цифры, _)': 'Username: 5–20 characters (letters, digits, _)',
+  'Пароль: минимум 8 символов': 'Password: at least 8 characters',
+  'Лента': 'Feed', 'Сообщения': 'Messages', 'Профиль': 'Profile', 'Мой профиль': 'My profile', 'Панель администратора': 'Admin panel',
+  'Наверх': 'Back to top', 'Создать пост': 'Create post', 'Найти по логину или имени': 'Search by username or name',
+  'Выберите чат или найдите собеседника через поиск': 'Select a chat or find someone via search',
+  'Назад': 'Back', 'Сообщение': 'Message', 'Отправить': 'Send', 'Посты': 'Posts', 'Сообщества': 'Communities', 'Сообщество': 'Community',
+  'Заявки на верификацию': 'Verification requests', 'Юзернеймы площадки': 'Marketplace usernames',
+  'Юзернейм: от 1 до 20 символов (латиница, цифры, _)': 'Username: 1–20 characters (letters, digits, _)',
+  'Продажа': 'Sale', 'Розыгрыш': 'Giveaway', 'Цена': 'Price', 'Окончание приёма заявок (можно не указывать)': 'Entry deadline (optional)',
+  'Выставить': 'List', 'Закрыть': 'Close', 'Как пользователь': 'As myself', 'Как сообщество': 'As a community',
+  'Что нового?': "What's new?", 'Добавить фото или видео (до 10, видео — до 1 минуты)': 'Add photos or videos (up to 10, videos up to 1 minute)',
+  'Опубликовать': 'Publish', 'Загрузка…': 'Loading…',
+  'divy продаёт и разыгрывает красивые юзернеймы. Полученный юзернейм добавится к вашему профилю как дополнительный — по нему вас тоже можно будет найти.':
+    'divy sells and gives away great usernames. A username you get is added to your profile as an extra one — people can find you by it too.',
+  'Галочка подтверждает, что аккаунт действительно принадлежит известному человеку, автору, бренду или СМИ. Заявку проверят модераторы divy.':
+    'The checkmark confirms that the account really belongs to a well-known person, creator, brand or media outlet. divy moderators will review your request.',
+  'Кто вы': 'Who you are', 'Известная личность': 'Public figure', 'Блогер / автор': 'Creator', 'Бренд / компания': 'Brand / company',
+  'СМИ': 'Media', 'Другое': 'Other', 'Почему аккаунт стоит верифицировать': 'Why this account should be verified',
+  'Кто вы, чем занимаетесь, почему вас могут искать в divy': 'Who you are, what you do, why people may look for you on divy',
+  'Ссылки, подтверждающие личность (необязательно)': 'Links confirming your identity (optional)',
+  'Сайт, соцсети, статьи о вас — по одной в строке': 'Website, social media, articles about you — one per line',
+  'Отправить на модерацию': 'Send for review', 'Название': 'Name',
+  'Адрес: 5–20 символов, латиница, цифры и _ (например, my_club)': 'Handle: 5–20 characters, letters, digits and _ (e.g. my_club)',
+  'Описание (необязательно)': 'Description (optional)', 'Описание': 'Description', 'Создать': 'Create', 'Новое сообщество': 'New community',
+  'Новый пост': 'New post', 'Здесь будут посты людей, на которых вы подписаны': 'Posts from people you follow will appear here',
+  'Постов пока нет — напишите первый!': 'No posts yet — write the first one!', 'Постов пока нет': 'No posts yet',
+  'В сообществе пока нет постов': 'No posts in this community yet', 'Ошибка': 'Error',
+  'Сервер недоступен': 'Server unavailable', 'Сервер недоступен, повторяю…': 'Server unavailable, retrying…',
+  'Пользователь': 'User', 'Партнёр': 'Partner', 'Корпоративный': 'Corporate', 'Стажёр': 'Intern', 'Модератор': 'Moderator',
+  'Админ': 'Admin', 'Владелец': 'Owner', 'Создать сообщество': 'Create community', 'Пост от имени сообщества': 'Post as community',
+  'У вас пока нет сообществ — создайте их в профиле, во вкладке «Сообщества»': 'You have no communities yet — create one in your profile, “Communities” tab',
+  'Файл слишком большой': 'File is too large', '▶ видео': '▶ video', 'Убрать': 'Remove',
+  'Не удалось загрузить. Прокрутите, чтобы повторить': 'Failed to load. Scroll to retry',
+  'Удалить': 'Delete', 'Официальный аккаунт': 'Official account', 'Убрать лайк': 'Unlike', 'Нравится': 'Like', 'Удалить пост?': 'Delete this post?',
+  'У вас пока нет сообществ. Нажмите ＋, чтобы создать первое': 'You have no communities yet. Tap ＋ to create one',
+  'Пользователь пока не владеет сообществами и не администрирует их': "This user doesn't own or manage any communities yet",
+  'Редактировать': 'Edit', 'Вы подписаны': 'Following', 'Подписаться': 'Follow', 'Сохранить': 'Save', 'Отмена': 'Cancel',
+  'Выйти': 'Log out', 'Выйти из аккаунта?': 'Log out of your account?', 'Написать': 'Message',
+  'Подать заявку на верификацию': 'Request verification', 'Имя': 'Name',
+  'Юзернейм: 5–20 символов (латиница, цифры, _)': 'Username: 5–20 characters (letters, digits, _)',
+  '+ Добавить ещё один юзернейм': '+ Add another username', 'О себе': 'About', 'Дополнительные юзернеймы': 'Extra usernames',
+  'Юзернейм — это и ваш логин для входа. Дополнительные юзернеймы для входа не подходят.': 'Your username is also your login. Extra usernames can’t be used to log in.',
+  'Сейчас площадка ничего не продаёт и не разыгрывает. Загляните позже!': 'Nothing is for sale or up for grabs right now. Check back later!',
+  'Разыграть': 'Draw', 'Снять': 'Remove', 'Купить': 'Buy', 'Покупка появится позже': 'Purchasing is coming soon',
+  'Вы участвуете': "You're in", 'Приём закрыт': 'Closed', 'Участвовать': 'Enter',
+  'Заявка на рассмотрении': 'Request under review', 'Прошлая заявка отклонена': 'Previous request was declined',
+  'Можно подать новую — добавьте больше подробностей и ссылок.': 'You can submit a new one — add more details and links.',
+  'Выберите, кто вы': 'Choose who you are', 'Новых заявок нет': 'No new requests', 'Одобрить': 'Approve', 'Отклонить': 'Decline',
+  'Ваш ранг:': 'Your rank:', 'пользователей': 'users', 'онлайн сейчас': 'online now', 'постов': 'posts', 'сообществ': 'communities',
+  'Сейчас ничего не продаётся и не разыгрывается': 'Nothing is listed right now',
+  'Соединение…': 'Connecting…', 'Нет соединения, переподключаюсь…': 'No connection, reconnecting…',
+  'Чатов пока нет. Найдите собеседника через поиск сверху.': 'No chats yet. Find someone via the search above.',
+  'Люди': 'People', 'Никого не нашли': 'Nobody found', 'Сообщений пока нет. Напишите первым 👋': 'No messages yet. Say hi 👋',
+  '⚠ повторить': '⚠ retry', 'Настройки': 'Settings', 'Тема': 'Theme', 'Тёмная': 'Dark', 'Светлая': 'Light', 'Язык': 'Language',
+  'Конфиденциальность': 'Privacy', 'Смена пароля': 'Change password', 'Текущий пароль': 'Current password',
+  'Новый пароль (минимум 8 символов)': 'New password (at least 8 characters)', 'Повторите новый пароль': 'Repeat new password',
+  'Сменить пароль': 'Change password', 'Пароли не совпадают': "Passwords don't match",
+  'Пароль изменён. На других устройствах нужно будет войти заново.': 'Password changed. Other devices will need to log in again.',
+  'Показать в профиле': 'Show on profile', 'Скрыть из профиля': 'Hide from profile', 'Вернуть на площадку': 'Return to marketplace',
+  'Редактирование': 'Editing', 'Верификация аккаунта': 'Account verification', 'Добавить фото или видео': 'Add photos or videos',
+  // ответы сервера
+  'неверный логин или пароль': 'wrong username or password', 'этот логин уже занят': 'this username is taken',
+  'логин: 5–20 символов, латиница, цифры и _': 'username: 5–20 characters, letters, digits and _',
+  'пароль: минимум 8 символов': 'password: at least 8 characters', 'нужно войти': 'please log in', 'ошибка сервера': 'server error',
+  'неверный запрос': 'bad request', 'пользователь не найден': 'user not found', 'этот юзернейм уже занят': 'this username is taken',
+  'юзернейм: 5–20 символов, латиница, цифры и _': 'username: 5–20 characters, letters, digits and _',
+  'этот юзернейм зарезервирован': 'this username is reserved', 'текущий пароль неверный': 'current password is wrong',
+  'новый пароль: минимум 8 символов': 'new password: at least 8 characters', 'пустой пост': 'the post is empty',
+  'в посте может быть не больше 10 фото и видео': 'a post can have up to 10 photos and videos',
+  'файл не найден — загрузите его заново': 'file not found — please upload it again', 'видео длиннее 1 минуты': 'the video is longer than 1 minute',
+  'заявка уже на рассмотрении': 'a request is already under review', 'расскажите о себе: от 10 до 1000 символов': 'tell us about yourself: 10 to 1000 characters',
+  'у вас уже максимум — 3 дополнительных юзернейма': 'you already have the maximum of 3 extra usernames',
+  'приём заявок на этот розыгрыш закрыт': 'this giveaway is closed', 'этот адрес уже занят': 'this handle is taken',
+  'адрес: 5–20 символов, латиница, цифры и _': 'handle: 5–20 characters, letters, digits and _',
+  'название: от 1 до 64 символов': 'name: 1 to 64 characters', 'имя: от 1 до 64 символов': 'name: 1 to 64 characters',
+  'недостаточно прав': 'not enough permissions', 'юзернейм не найден': 'username not found',
+};
+function tr(s) {
+  if (LANG !== 'en' || !s) return s;
+  const t = s.trim();
+  const r = EN[t];
+  return r == null ? s : s.replace(t, r);
+}
+// пользовательский контент не трогаем
+const NO_TR = '.post-body,.post-name,.prof-name,.prof-bio,.prof-user,.msg,.title,.prev,.comm-desc,.comm-slug,.lot-name,.req-text,.req-links,.chip-name,.brand,.logo,textarea';
+function translateTree(root) {
+  if (root.nodeType === 3) {
+    const p = root.parentElement;
+    if (p && !p.closest(NO_TR)) { const v = tr(root.nodeValue); if (v !== root.nodeValue) root.nodeValue = v; }
+    return;
+  }
+  if (root.nodeType !== 1 || root.closest('script,style')) return;
+  for (const a of ['placeholder', 'title']) {
+    if (root.hasAttribute(a)) { const v = tr(root.getAttribute(a)); if (v !== root.getAttribute(a)) root.setAttribute(a, v); }
+  }
+  if (root.closest(NO_TR)) return;
+  for (const c of root.childNodes) translateTree(c);
+}
+if (LANG === 'en') {
+  translateTree(document.body);
+  new MutationObserver(list => {
+    for (const m of list) {
+      if (m.type === 'childList') m.addedNodes.forEach(translateTree);
+      else translateTree(m.target);
+    }
+  }).observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['placeholder', 'title'] });
+  const _alert = window.alert.bind(window), _confirm = window.confirm.bind(window);
+  window.alert = m => _alert(tr(String(m)));
+  window.confirm = m => _confirm(tr(String(m)));
+}
 const newCid = () => crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2);
 const sameUser = (a, b) => String(a).toLowerCase() === String(b).toLowerCase();
 
@@ -658,6 +849,10 @@ updateCompact();
 addEventListener('resize', updateCompact);
 
 function plural(n, forms) { // plural(5, ['пост','поста','постов'])
+  if (LANG === 'en') { // английский: 1 post / 2 posts
+    const en = EN_PLURAL[forms[2]];
+    if (en) return n === 1 ? en[0] : en[1];
+  }
   const a = Math.abs(n) % 100, b = a % 10;
   if (a > 10 && a < 20) return forms[2];
   if (b > 1 && b < 5) return forms[1];
@@ -669,29 +864,29 @@ const hm = ts => { const d = new Date(ts); return pad(d.getHours()) + ':' + pad(
 const sameDay = (a, b) => new Date(a).toDateString() === new Date(b).toDateString();
 function dayLabel(ts) {
   const t = new Date();
-  if (sameDay(ts, t)) return 'Сегодня';
+  if (sameDay(ts, t)) return L('Сегодня', 'Today');
   const y = new Date(t); y.setDate(t.getDate() - 1);
-  if (sameDay(ts, y)) return 'Вчера';
+  if (sameDay(ts, y)) return L('Вчера', 'Yesterday');
   const d = new Date(ts);
-  return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: d.getFullYear() !== t.getFullYear() ? 'numeric' : undefined });
+  return d.toLocaleDateString(LOCALE, { day: 'numeric', month: 'long', year: d.getFullYear() !== t.getFullYear() ? 'numeric' : undefined });
 }
-const listTime = ts => sameDay(ts, Date.now()) ? hm(ts) : new Date(ts).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+const listTime = ts => sameDay(ts, Date.now()) ? hm(ts) : new Date(ts).toLocaleDateString(LOCALE, { day: 'numeric', month: 'short' });
 function postTime(ts) {
   const diff = Date.now() - ts;
-  if (diff < 60e3) return 'только что';
-  if (diff < 3600e3) return Math.floor(diff / 60e3) + ' мин';
-  if (diff < 86400e3) return Math.floor(diff / 3600e3) + ' ч';
+  if (diff < 60e3) return L('только что', 'just now');
+  if (diff < 3600e3) return Math.floor(diff / 60e3) + L(' мин', 'm');
+  if (diff < 86400e3) return Math.floor(diff / 3600e3) + L(' ч', 'h');
   const d = new Date(ts);
-  return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: d.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined });
+  return d.toLocaleDateString(LOCALE, { day: 'numeric', month: 'short', year: d.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined });
 }
 function lastSeenText(u) {
-  if (u.online) return 'в сети';
-  if (!u.last_seen) return 'был(а) давно';
+  if (u.online) return L('в сети', 'online');
+  if (!u.last_seen) return L('был(а) давно', 'last seen a long time ago');
   const diff = Date.now() - u.last_seen;
-  if (diff < 60e3) return 'был(а) только что';
-  if (diff < 3600e3) return `был(а) ${Math.floor(diff / 60e3)} мин. назад`;
-  if (sameDay(u.last_seen, Date.now())) return 'был(а) в ' + hm(u.last_seen);
-  return 'был(а) ' + dayLabel(u.last_seen).toLowerCase() + ' в ' + hm(u.last_seen);
+  if (diff < 60e3) return L('был(а) только что', 'last seen just now');
+  if (diff < 3600e3) return L(`был(а) ${Math.floor(diff / 60e3)} мин. назад`, `last seen ${Math.floor(diff / 60e3)} min ago`);
+  if (sameDay(u.last_seen, Date.now())) return L('был(а) в ', 'last seen at ') + hm(u.last_seen);
+  return L('был(а) ' + dayLabel(u.last_seen).toLowerCase() + ' в ', 'last seen ' + dayLabel(u.last_seen) + ' at ') + hm(u.last_seen);
 }
 
 const COLORS = ['#e17076', '#7bc862', '#e5ca77', '#65aadd', '#a695e7', '#ee7aae', '#6ec9cb', '#faa774'];
@@ -877,7 +1072,7 @@ function showFresh() {
 function updateFresh() {
   const n = S.freshCount;
   $('newPosts').classList.toggle('hidden', !n);
-  $('newPosts').textContent = S.scope === 'all' ? `↑ Новые посты: ${n}` : '↑ Есть новые посты';
+  $('newPosts').textContent = S.scope === 'all' ? L(`↑ Новые посты: ${n}`, `↑ New posts: ${n}`) : L('↑ Есть новые посты', '↑ New posts');
 }
 
 // Новый пост: окно по кнопке «＋»
@@ -889,6 +1084,7 @@ addEventListener('keydown', e => {
   if (!$('commModal').classList.contains('hidden')) closeCommModal();
   if (!$('marketModal').classList.contains('hidden')) closeMarket();
   if (!$('verifModal').classList.contains('hidden')) closeVerify();
+  if (!$('setModal').classList.contains('hidden')) closeSettings();
 });
 // community — сразу выбрать «от имени сообщества» (когда «＋» нажат на странице сообщества)
 function openComposer(community) {
@@ -929,7 +1125,7 @@ function setPostAs(c) {
   const ava = $('postAva');
   setAva(ava, c ? { id: c.id, name: c.name } : S.me, false);
   ava.classList.toggle('sq', !!c);
-  $('postInput').placeholder = c ? `Пост от имени «${c.name}»` : 'Что нового?';
+  $('postInput').placeholder = c ? L(`Пост от имени «${c.name}»`, `Post as “${c.name}”`) : L('Что нового?', "What's new?");
   if (c) {
     renderAsList();
     if (!S.myComms) ensureMyComms().then(renderAsList);
@@ -1029,14 +1225,14 @@ function videoDuration(url) {
 
 async function addFiles(files) {
   for (const f of files) {
-    if (S.attach.length >= MAX_MEDIA) { alert(`В одном посте — не больше ${MAX_MEDIA} фото и видео`); break; }
+    if (S.attach.length >= MAX_MEDIA) { alert(L(`В одном посте — не больше ${MAX_MEDIA} фото и видео`, `Up to ${MAX_MEDIA} photos and videos per post`)); break; }
     const kind = f.type.startsWith('video/') ? 'video' : f.type.startsWith('image/') ? 'image' : '';
-    if (!kind) { alert(`«${f.name}» — не фото и не видео`); continue; }
-    if (kind === 'image' && f.size > IMAGE_MAX_BYTES) { alert(`Фото «${f.name}» больше 15 МБ`); continue; }
-    if (kind === 'video' && f.size > VIDEO_MAX_BYTES) { alert(`Видео «${f.name}» больше 100 МБ`); continue; }
+    if (!kind) { alert(L(`«${f.name}» — не фото и не видео`, `“${f.name}” is not a photo or video`)); continue; }
+    if (kind === 'image' && f.size > IMAGE_MAX_BYTES) { alert(L(`Фото «${f.name}» больше 15 МБ`, `Photo “${f.name}” is larger than 15 MB`)); continue; }
+    if (kind === 'video' && f.size > VIDEO_MAX_BYTES) { alert(L(`Видео «${f.name}» больше 100 МБ`, `Video “${f.name}” is larger than 100 MB`)); continue; }
     const it = { key: newCid(), file: f, kind, url: URL.createObjectURL(f), status: 'uploading', progress: 0 };
     if (kind === 'video' && await videoDuration(it.url) > VIDEO_MAX_SECS + 0.5) {
-      alert(`Видео «${f.name}» длиннее 1 минуты`);
+      alert(L(`Видео «${f.name}» длиннее 1 минуты`, `Video “${f.name}” is longer than 1 minute`));
       URL.revokeObjectURL(it.url);
       continue;
     }
@@ -1100,7 +1296,7 @@ function paintAttach(it) {
   it.state.className = 'att-state' + (it.status === 'error' ? ' err' : '');
   it.state.classList.toggle('hidden', it.status === 'done');
   it.state.textContent = it.status === 'uploading' ? Math.round(it.progress * 100) + '%'
-    : it.status === 'error' ? it.error + ' · нажмите, чтобы повторить' : '';
+    : it.status === 'error' ? tr(it.error) + L(' · нажмите, чтобы повторить', ' · tap to retry') : '';
 }
 
 function removeAttach(it) {
@@ -1378,6 +1574,7 @@ async function showProfile(username) {
   S.profMine = mine;
   setView('profile', mine ? 'me' : '');
   $('profBack').classList.toggle('hidden', mine || navDepth === 0);
+  $('profGear').classList.toggle('hidden', !mine);
   $('profTitle').textContent = mine ? 'Мой профиль' : 'Профиль';
   const req = ++S.profReq;
   const same = S.prof && sameUser(S.prof.username, username);
@@ -1509,7 +1706,7 @@ function renderCommunity() {
   const name = el('div', 'prof-name', c.name);
   if (c.verified) name.append(verifiedBadge());
   box.append(top, name, el('div', 'prof-user', '@' + c.slug
-    + (c.role === 'owner' ? ' · вы владелец' : c.role === 'admin' ? ' · вы администратор' : '')));
+    + (c.role === 'owner' ? L(' · вы владелец', ' · you are the owner') : c.role === 'admin' ? L(' · вы администратор', ' · you are an admin') : '')));
   if (c.description) box.append(el('div', 'prof-bio', c.description));
   const stats = el('div', 'prof-stats');
   const stat = (n, forms) => { const s = el('span'); s.append(el('b', null, n), ' ' + plural(n, forms)); return s; };
@@ -1546,13 +1743,13 @@ function editCommunity() {
   const row = el('div', 'prof-btns');
   row.style.justifyContent = 'flex-start';
   row.append(save, cancel);
-  box.append(el('div', 'prof-name', 'Редактирование'), el('div', 'prof-user', '@' + c.slug), el('div', null, ' '), name, desc, row, err);
+  box.append(el('div', 'prof-name', L('Редактирование', 'Editing')), el('div', 'prof-user', '@' + c.slug), el('div', null, ' '), name, desc, row, err);
   name.focus();
 }
 
 async function deleteCommunity() {
   const c = S.comm;
-  if (!confirm(`Удалить сообщество «${c.name}»?\nВсе его посты тоже будут удалены. Это нельзя отменить.`)) return;
+  if (!confirm(L(`Удалить сообщество «${c.name}»?\nВсе его посты тоже будут удалены. Это нельзя отменить.`, `Delete the community “${c.name}”?\nAll its posts will be deleted too. This can't be undone.`))) return;
   try {
     await api('/api/community/delete', { method: 'POST', body: { id: c.id } });
     onCommunityDeleted(c.id);
@@ -1636,7 +1833,7 @@ function renderProfile() {
   box.append(top,
     nameEl,
     el('div', 'prof-user', '@' + u.username + (me ? '' : ' · ' + lastSeenText(u))));
-  if (u.usernames && u.usernames.length) box.append(el('div', 'extra-names', 'также ' + u.usernames.map(x => '@' + x).join(', ')));
+  if (u.usernames && u.usernames.length) box.append(el('div', 'extra-names', L('также ', 'also ') + u.usernames.map(x => '@' + x).join(', ')));
   if (u.bio) box.append(el('div', 'prof-bio', u.bio));
   const stats = el('div', 'prof-stats');
   const stat = (n, forms) => { const s = el('span'); s.append(el('b', null, n), ' ' + plural(n, forms)); return s; };
@@ -1684,13 +1881,93 @@ function editProfile() {
   const row = el('div', 'prof-btns');
   row.style.justifyContent = 'flex-start';
   row.append(save, cancel);
-  const extra = u.usernames && u.usernames.length ? el('div', 'extra-names', 'Дополнительные: ' + u.usernames.map(x => '@' + x).join(', ')) : null;
-  box.append(el('div', 'prof-name', 'Редактирование'), el('div', null, ' '), name, uname);
+  box.append(el('div', 'prof-name', L('Редактирование', 'Editing')), el('div', null, ' '), name, uname);
   box.append(Object.assign(el('div', 'extra-names', 'Юзернейм — это и ваш логин для входа. Дополнительные юзернеймы для входа не подходят.'), { style: 'margin:-4px 0 8px' }));
-  if (extra) { extra.style.margin = '-4px 0 6px'; box.append(extra); }
+  if (u.my_usernames && u.my_usernames.length) box.append(el('div', 'field-label', 'Дополнительные юзернеймы'), usernameChips(u));
   box.append(more, bio, row, err);
   name.focus();
 }
+
+// Доп. юзернеймы — закруглённые «пилюли» с двумя кнопками:
+// глаз — показать/скрыть (скрытый не виден в профиле и по нему не находят), крестик — вернуть на площадку
+function usernameChips(u) {
+  const wrap = el('div', 'chips');
+  const sync = () => { u.usernames = u.my_usernames.filter(y => !y.hidden).map(y => y.username); };
+  for (const x of u.my_usernames) {
+    const chip = el('div', 'chip' + (x.hidden ? ' off' : ''));
+    const eye = el('button');
+    eye.type = 'button';
+    eye.title = x.hidden ? 'Показать в профиле' : 'Скрыть из профиля';
+    eye.innerHTML = x.hidden ? ICON.eyeOff : ICON.eye;
+    eye.onclick = async () => {
+      eye.disabled = true;
+      try {
+        const r = await api('/api/me/usernames/visibility', { method: 'POST', body: { username: x.username, hidden: !x.hidden } });
+        x.hidden = r.hidden;
+        sync();
+        wrap.replaceWith(usernameChips(u));
+      } catch (e) { alert(e.message); eye.disabled = false; }
+    };
+    const del = el('button', 'x');
+    del.type = 'button';
+    del.title = 'Вернуть на площадку';
+    del.innerHTML = ICON.cross;
+    del.onclick = async () => {
+      if (!confirm(L(`Вернуть @${x.username} на площадку?\nДеньги не возвращаются — юзернейм снова будет выставлен и станет доступен другим.`,
+                     `Return @${x.username} to the marketplace?\nNo refund — the username will be listed again and become available to others.`))) return;
+      del.disabled = true;
+      try {
+        await api('/api/me/usernames/release', { method: 'POST', body: { username: x.username } });
+        u.my_usernames = u.my_usernames.filter(y => y !== x);
+        sync();
+        wrap.replaceWith(usernameChips(u));
+      } catch (e) { alert(e.message); del.disabled = false; }
+    };
+    chip.append(el('span', 'chip-name', '@' + x.username), eye, del);
+    wrap.append(chip);
+  }
+  return wrap;
+}
+
+// ================= Настройки клиента (шестерёнка в своём профиле) =================
+$('profGear').onclick = openSettings;
+$('setClose').onclick = closeSettings;
+$('setModal').addEventListener('mousedown', e => { if (e.target === $('setModal')) closeSettings(); });
+function closeSettings() { $('setModal').classList.add('hidden'); }
+function openSettings() {
+  const theme = document.documentElement.dataset.theme;
+  document.querySelectorAll('#setTheme button').forEach(b => b.classList.toggle('on', b.dataset.v === theme));
+  document.querySelectorAll('#setLang button').forEach(b => b.classList.toggle('on', b.dataset.v === LANG));
+  $('pwOld').value = $('pwNew').value = $('pwNew2').value = '';
+  $('pwErr').textContent = ''; $('pwErr').classList.remove('ok');
+  $('setModal').classList.remove('hidden');
+}
+document.querySelectorAll('#setTheme button').forEach(b => b.onclick = () => {
+  const t = b.dataset.v;
+  document.documentElement.dataset.theme = t;
+  document.querySelector('meta[name=theme-color]').content = t === 'light' ? '#f4f5f7' : '#0f1115';
+  store('divy_theme', t);
+  document.querySelectorAll('#setTheme button').forEach(x => x.classList.toggle('on', x === b));
+});
+document.querySelectorAll('#setLang button').forEach(b => b.onclick = () => {
+  if (b.dataset.v === LANG) return;
+  store('divy_lang', b.dataset.v);
+  location.reload(); // язык применяется ко всему интерфейсу при перезагрузке
+});
+$('pwSave').onclick = async () => {
+  const err = $('pwErr');
+  err.classList.remove('ok');
+  err.textContent = '';
+  if ($('pwNew').value !== $('pwNew2').value) { err.textContent = 'Пароли не совпадают'; return; }
+  $('pwSave').disabled = true;
+  try {
+    await api('/api/me/password', { method: 'POST', body: { old: $('pwOld').value, new: $('pwNew').value } });
+    $('pwOld').value = $('pwNew').value = $('pwNew2').value = '';
+    err.classList.add('ok');
+    err.textContent = 'Пароль изменён. На других устройствах нужно будет войти заново.';
+  } catch (e) { err.textContent = e instanceof TypeError ? 'Сервер недоступен' : e.message; }
+  $('pwSave').disabled = false;
+};
 
 // ================= Площадка юзернеймов =================
 $('marketClose').onclick = closeMarket;
@@ -1709,15 +1986,15 @@ async function openMarket() {
   } catch (e) { box.replaceChildren(el('div', 'empty', e.message)); }
 }
 
-const fmtDate = ts => new Date(ts).toLocaleString('ru-RU', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
+const fmtDate = ts => new Date(ts).toLocaleString(LOCALE, { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
 
 // Лот площадки. admin=true — вид для панели администратора (разыграть / снять).
 function lotNode(l, admin) {
   const it = el('div', 'lot');
   const meta = el('div', 'meta');
   const info = l.kind === 'sale'
-    ? 'Продажа · цена ' + Number(l.price).toLocaleString('ru-RU')
-    : 'Розыгрыш · ' + (l.ends ? 'до ' + fmtDate(l.ends) : 'без срока') + ' · ' + l.entries + ' ' + plural(l.entries, ['участник', 'участника', 'участников']);
+    ? L('Продажа · цена ', 'Sale · price ') + Number(l.price).toLocaleString(LOCALE)
+    : L('Розыгрыш · ', 'Giveaway · ') + (l.ends ? L('до ', 'until ') + fmtDate(l.ends) : L('без срока', 'no deadline')) + ' · ' + l.entries + ' ' + plural(l.entries, ['участник', 'участника', 'участников']);
   meta.append(el('div', 'lot-name', '@' + l.username), el('div', 'lot-info', info));
   const btns = el('div', 'lot-btns');
   if (admin) {
@@ -1773,7 +2050,7 @@ async function openVerify() {
   const st = $('verifStatus');
   st.replaceChildren();
   if (last && last.status === 'pending') { // уже ждём решения — форму не показываем
-    st.append(el('b', null, 'Заявка на рассмотрении'), 'Отправлена ' + fmtDate(last.created) + '. Модераторы проверят её и примут решение.');
+    st.append(el('b', null, 'Заявка на рассмотрении'), L('Отправлена ' + fmtDate(last.created) + '. Модераторы проверят её и примут решение.', 'Sent ' + fmtDate(last.created) + '. Moderators will review it and decide.'));
     st.classList.remove('hidden');
     return;
   }
@@ -1834,7 +2111,7 @@ function verifNode(v) {
     } catch (e) { alert(e.message); ok.disabled = no.disabled = false; }
   };
   ok.onclick = () => decide(true);
-  no.onclick = () => { if (confirm(`Отклонить заявку @${v.user.username}?`)) decide(false); };
+  no.onclick = () => { if (confirm(L(`Отклонить заявку @${v.user.username}?`, `Decline @${v.user.username}'s request?`))) decide(false); };
   btns.append(ok, no);
   it.append(btns);
   return it;
@@ -1890,17 +2167,17 @@ $('lAdd').onclick = async () => {
 };
 
 async function drawLot(l, btn) {
-  if (!confirm(`Провести розыгрыш @${l.username} среди ${l.entries} ${plural(l.entries, ['участника', 'участников', 'участников'])}?`)) return;
+  if (!confirm(L(`Провести розыгрыш @${l.username} среди ${l.entries} ${plural(l.entries, ['участника', 'участников', 'участников'])}?`, `Draw @${l.username} among ${l.entries} ${plural(l.entries, ['участник', 'участника', 'участников'])}?`))) return;
   btn.disabled = true;
   try {
     const r = await api('/api/admin/market/draw', { method: 'POST', body: { id: l.id } });
-    alert(`Победитель: ${r.winner.name} (@${r.winner.username}) — получает @${r.username}`);
+    alert(L(`Победитель: ${r.winner.name} (@${r.winner.username}) — получает @${r.username}`, `Winner: ${r.winner.name} (@${r.winner.username}) gets @${r.username}`));
     loadAdminMarket();
   } catch (e) { alert(e.message); btn.disabled = false; }
 }
 
 async function deleteLot(l) {
-  if (!confirm(`Снять @${l.username} с площадки?`)) return;
+  if (!confirm(L(`Снять @${l.username} с площадки?`, `Remove @${l.username} from the marketplace?`))) return;
   try {
     await api('/api/admin/market/delete', { method: 'POST', body: { id: l.id } });
     loadAdminMarket();
@@ -2078,8 +2355,8 @@ function chatItem(c) {
   if (c.last) r1.append(el('div', 'time', listTime(c.last.created)));
   const r2 = el('div', 'row');
   const typing = S.typing.has(c.id);
-  const text = typing ? 'печатает…'
-    : c.last ? (c.last.user_id === S.me?.id ? 'Вы: ' : '') + c.last.body.replace(/\s+/g, ' ')
+  const text = typing ? L('печатает…', 'typing…')
+    : c.last ? (c.last.user_id === S.me?.id ? L('Вы: ', 'You: ') : '') + c.last.body.replace(/\s+/g, ' ')
     : '@' + c.peer.username;
   r2.append(el('div', 'prev' + (typing ? ' typing' : ''), text));
   if (c.unread > 0) r2.append(el('div', 'badge', c.unread > 99 ? '99+' : c.unread));
@@ -2185,7 +2462,7 @@ function renderHead() {
   setAva($('peerAva'), c.peer, c.peer.online);
   $('peerName').textContent = c.peer.name;
   const st = $('peerStatus');
-  if (S.typing.has(c.id)) { st.textContent = 'печатает…'; st.className = 'status typing'; }
+  if (S.typing.has(c.id)) { st.textContent = L('печатает…', 'typing…'); st.className = 'status typing'; }
   else { st.textContent = lastSeenText(c.peer); st.className = 'status' + (c.peer.online ? ' online' : ''); }
 }
 setInterval(renderHead, 60000); // «был(а) N мин. назад» обновляется само
