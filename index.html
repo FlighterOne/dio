@@ -222,8 +222,30 @@ svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:2; s
 .prof-name .verified.ghost { font-size:13px }
 .verified.ghost:hover { opacity:1; border-color:var(--accent); color:var(--accent) }
 /* настройки */
-.set-title { font-weight:700; font-size:16px; margin:4px 0 10px }
-.set-sub { color:var(--muted); font-size:13px; font-weight:600; margin:-4px 0 8px }
+.set-row { width:100%; display:flex; align-items:center; gap:12px; padding:14px 12px; border-radius:12px; text-align:left; font-weight:600; font-size:15px }
+.set-row:hover { background:var(--panel2) }
+.set-row .ic { width:21px; height:21px; color:var(--accent) }
+.set-row > span:first-of-type { flex:1; min-width:0 }
+.set-row .set-val { color:var(--muted); font-weight:500; font-size:14px; display:flex; align-items:center; gap:8px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
+.set-row .chev { width:18px; height:18px; color:var(--muted) }
+/* переключатель темы: влево — тёмная, вправо — светлая */
+.switch-row { display:flex; align-items:center; justify-content:center; gap:16px; padding:22px 0 14px }
+.sw-label { color:var(--muted); font-weight:600; cursor:pointer; user-select:none }
+.sw-label.on { color:var(--text) }
+.switch { width:60px; height:34px; border-radius:17px; background:var(--line); position:relative; transition:background .2s; flex-shrink:0 }
+.switch::after { content:""; position:absolute; top:3px; left:3px; width:28px; height:28px; border-radius:50%; background:#fff; box-shadow:0 2px 6px rgba(0,0,0,.3); transition:transform .2s }
+.switch.on { background:var(--accent) }
+.switch.on::after { transform:translateX(26px) }
+/* список языков с флагами */
+.lang-item { width:100%; display:flex; align-items:center; gap:14px; padding:13px 12px; border-radius:12px; font-weight:600; font-size:15px; text-align:left }
+.lang-item:hover { background:var(--panel2) }
+.lang-item .check { width:20px; height:20px; margin-left:auto; color:var(--accent); visibility:hidden }
+.lang-item.on .check { visibility:visible }
+svg.flag { width:30px; height:20px; border-radius:3px; fill:none; stroke:none; flex-shrink:0; box-shadow:0 0 0 1px var(--line) }
+.set-val svg.flag { width:22px; height:15px }
+/* синяя надпись «Забыл пароль» под полем пароля */
+.forgot { display:block; color:var(--accent); font-size:13px; font-weight:600; margin:-4px 0 12px auto }
+.forgot:hover { text-decoration:underline }
 .err.ok { color:var(--ok) }
 
 /* доп. юзернеймы в редактировании профиля: закруглённые контуры с кнопками */
@@ -351,6 +373,7 @@ svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:2; s
     <input class="field" id="fUser" placeholder="Логин" autocomplete="username" autocapitalize="off" spellcheck="false" required>
     <input class="field hidden" id="fName" placeholder="Имя (его видят другие)" autocomplete="nickname">
     <input class="field" id="fPass" type="password" placeholder="Пароль" autocomplete="current-password" required>
+    <button class="forgot" type="button" id="fForgot">Забыл пароль</button>
     <button class="btn" id="fBtn">Войти</button>
     <div class="err" id="fErr"></div>
   </form>
@@ -550,31 +573,119 @@ svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:2; s
   </div>
 </div>
 
-<!-- Настройки клиента -->
+<!-- Настройки клиента: три пункта, каждый открывает своё подменю -->
 <div class="modal hidden" id="setModal">
   <div class="sheet">
     <div class="sheet-head">
       <button class="icon-btn" id="setClose" title="Закрыть"><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
-      Настройки
+      <button class="icon-btn hidden" id="setBack" title="Назад"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
+      <span id="setTitle">Настройки</span>
     </div>
     <div class="sheet-body">
-      <div class="set-title">Тема</div>
-      <div class="seg" id="setTheme">
-        <button type="button" data-v="dark">Тёмная</button>
-        <button type="button" data-v="light">Светлая</button>
+      <!-- главное меню -->
+      <div id="setMain">
+        <button class="set-row" data-page="theme">
+          <svg class="ic" viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+          <span>Тема</span><span class="set-val" id="setThemeVal"></span>
+          <svg class="chev" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+        </button>
+        <button class="set-row" data-page="lang">
+          <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/></svg>
+          <span>Язык</span><span class="set-val" id="setLangVal"></span>
+          <svg class="chev" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+        </button>
+        <button class="set-row" data-page="privacy">
+          <svg class="ic" viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+          <span>Конфиденциальность</span>
+          <svg class="chev" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+        </button>
       </div>
-      <div class="set-title">Язык</div>
-      <div class="seg" id="setLang">
-        <button type="button" data-v="ru">Русский</button>
-        <button type="button" data-v="en">English</button>
+
+      <!-- тема: переключатель влево-вправо -->
+      <div id="setPageTheme" class="hidden">
+        <div class="switch-row">
+          <span class="sw-label" data-v="dark">Тёмная</span>
+          <button class="switch" id="themeSwitch" type="button" role="switch" title="Переключить тему"></button>
+          <span class="sw-label" data-v="light">Светлая</span>
+        </div>
       </div>
-      <div class="set-title">Конфиденциальность</div>
-      <div class="set-sub">Смена пароля</div>
-      <input class="field" id="pwOld" type="password" placeholder="Текущий пароль" autocomplete="current-password">
-      <input class="field" id="pwNew" type="password" placeholder="Новый пароль (минимум 8 символов)" autocomplete="new-password">
-      <input class="field" id="pwNew2" type="password" placeholder="Повторите новый пароль" autocomplete="new-password">
-      <button class="btn" id="pwSave">Сменить пароль</button>
-      <div class="err" id="pwErr"></div>
+
+      <!-- язык: список с флагами -->
+      <div id="setPageLang" class="hidden">
+        <button class="lang-item" data-v="ru">
+          <svg class="flag" viewBox="0 0 9 6"><rect width="9" height="2" y="0" fill="#fff"/><rect width="9" height="2" y="2" fill="#0039a6"/><rect width="9" height="2" y="4" fill="#d52b1e"/></svg>
+          <span>Русский</span>
+          <svg class="check" viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg>
+        </button>
+        <button class="lang-item" data-v="en">
+          <svg class="flag" viewBox="0 0 60 30"><clipPath id="ukClip"><path d="M30,15 h30 v15 z v15 h-30 z h-30 v-15 z v-15 h30 z"/></clipPath><path d="M0,0 v30 h60 v-30 z" fill="#012169"/><path d="M0,0 L60,30 M60,0 L0,30" stroke="#fff" stroke-width="6"/><path d="M0,0 L60,30 M60,0 L0,30" clip-path="url(#ukClip)" stroke="#c8102e" stroke-width="4"/><path d="M30,0 v30 M0,15 h60" stroke="#fff" stroke-width="10"/><path d="M30,0 v30 M0,15 h60" stroke="#c8102e" stroke-width="6"/></svg>
+          <span>English</span>
+          <svg class="check" viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg>
+        </button>
+      </div>
+
+      <!-- конфиденциальность -->
+      <div id="setPagePrivacy" class="hidden">
+        <button class="set-row" data-sub="password">
+          <svg class="ic" viewBox="0 0 24 24"><circle cx="7.5" cy="15.5" r="4.5"/><path d="M10.7 12.3L21 2M16 7l3 3M19 4l2 2"/></svg>
+          <span>Сменить пароль</span>
+          <svg class="chev" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+        </button>
+        <button class="set-row" data-sub="forgot">
+          <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3M12 17h.01"/></svg>
+          <span>Забыл пароль</span>
+          <svg class="chev" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+        </button>
+        <button class="set-row" data-sub="email">
+          <svg class="ic" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 6l-10 7L2 6"/></svg>
+          <span>Почта для восстановления</span><span class="set-val" id="setEmailVal"></span>
+          <svg class="chev" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+        </button>
+      </div>
+
+      <!-- смена пароля -->
+      <div id="setPagePassword" class="hidden">
+        <input class="field" id="pwOld" type="password" placeholder="Текущий пароль" autocomplete="current-password">
+        <button class="forgot" type="button">Забыл пароль</button>
+        <input class="field" id="pwNew" type="password" placeholder="Новый пароль (минимум 8 символов)" autocomplete="new-password">
+        <input class="field" id="pwNew2" type="password" placeholder="Повторите новый пароль" autocomplete="new-password">
+        <button class="btn" id="pwSave">Сменить пароль</button>
+        <div class="err" id="pwErr"></div>
+      </div>
+
+      <!-- почта для восстановления -->
+      <div id="setPageEmail" class="hidden">
+        <div class="hint">На эту почту придёт код, если вы забудете пароль. Её никто не видит.</div>
+        <input class="field" id="emailInput" type="email" placeholder="Почта" autocomplete="email" autocapitalize="off" spellcheck="false">
+        <button class="btn" id="emailSave">Сохранить</button>
+        <div class="err" id="emailErr"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Восстановление пароля («Забыл пароль») -->
+<div class="modal hidden" id="recModal">
+  <div class="sheet">
+    <div class="sheet-head">
+      <button class="icon-btn" id="recClose" title="Закрыть"><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+      Восстановление пароля
+    </div>
+    <div class="sheet-body">
+      <div id="recStep1">
+        <div class="hint">Введите почту, привязанную к аккаунту, — мы отправим на неё код для сброса пароля.</div>
+        <input class="field" id="recEmail" type="email" placeholder="Почта" autocomplete="email" autocapitalize="off" spellcheck="false">
+        <button class="btn" id="recSend">Получить код</button>
+      </div>
+      <div id="recStep2" class="hidden">
+        <div class="hint">Если эта почта привязана к аккаунту, мы отправили на неё код. Он действует 15 минут.</div>
+        <input class="field" id="recCode" inputmode="numeric" maxlength="6" placeholder="Код из письма" autocomplete="one-time-code">
+        <input class="field" id="recNew" type="password" placeholder="Новый пароль (минимум 8 символов)" autocomplete="new-password">
+        <input class="field" id="recNew2" type="password" placeholder="Повторите новый пароль" autocomplete="new-password">
+        <button class="btn" id="recSave">Сменить пароль</button>
+        <button class="link-btn" id="recResend" type="button" style="margin-top:12px">Отправить код ещё раз</button>
+      </div>
+      <div class="err" id="recErr"></div>
     </div>
   </div>
 </div>
@@ -685,6 +796,7 @@ const S = {
   postAs: null,       // от чьего имени пишу пост: null — от себя, иначе сообщество
   asTab: 'user',
   attach: [],         // фото/видео, прикреплённые к новому посту
+  myEmail: '',        // почта для восстановления пароля (видна только мне)
 };
 let searchMode = false, searchTimer = 0, authMode = 'login', navDepth = 0;
 
@@ -789,6 +901,17 @@ const EN = {
   'Пароль изменён. На других устройствах нужно будет войти заново.': 'Password changed. Other devices will need to log in again.',
   'Показать в профиле': 'Show on profile', 'Скрыть из профиля': 'Hide from profile', 'Вернуть на площадку': 'Return to marketplace',
   'Редактирование': 'Editing', 'Верификация аккаунта': 'Account verification', 'Добавить фото или видео': 'Add photos or videos',
+  'Забыл пароль': 'Forgot password', 'Почта для восстановления': 'Recovery email', 'Переключить тему': 'Switch theme',
+  'На эту почту придёт код, если вы забудете пароль. Её никто не видит.': "We'll send a code to this email if you forget your password. Nobody else can see it.",
+  'Почта': 'Email', 'Почта сохранена': 'Email saved', 'Почта отвязана': 'Email removed',
+  'Восстановление пароля': 'Password recovery',
+  'Введите почту, привязанную к аккаунту, — мы отправим на неё код для сброса пароля.': "Enter the email linked to your account — we'll send a password reset code to it.",
+  'Получить код': 'Get code', 'Код из письма': 'Code from the email', 'Отправить код ещё раз': 'Send the code again',
+  'Если эта почта привязана к аккаунту, мы отправили на неё код. Он действует 15 минут.': "If this email is linked to an account, we've sent a code to it. It's valid for 15 minutes.",
+  'Код отправлен ещё раз': 'Code sent again', 'Пароль изменён. Войдите с новым паролем.': 'Password changed. Log in with your new password.',
+  'неверный адрес почты': 'invalid email address', 'эта почта уже привязана к другому аккаунту': 'this email is already linked to another account',
+  'код неверный или устарел': 'the code is wrong or expired', 'слишком много попыток — запросите новый код': 'too many attempts — request a new code',
+  'пароль слишком длинный': 'the password is too long',
   // ответы сервера
   'неверный логин или пароль': 'wrong username or password', 'этот логин уже занят': 'this username is taken',
   'логин: 5–20 символов, латиница, цифры и _': 'username: 5–20 characters, letters, digits and _',
@@ -927,6 +1050,7 @@ document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => {
   $('fBtn').textContent = authMode === 'login' ? 'Войти' : 'Создать аккаунт';
   $('fUser').placeholder = authMode === 'login' ? 'Логин' : 'Логин: 5–20 символов (латиница, цифры, _)';
   $('fPass').placeholder = authMode === 'login' ? 'Пароль' : 'Пароль: минимум 8 символов';
+  $('fForgot').classList.toggle('hidden', authMode !== 'login');
   $('fPass').autocomplete = authMode === 'login' ? 'current-password' : 'new-password';
   $('fErr').textContent = '';
 });
@@ -935,6 +1059,7 @@ $('authForm').onsubmit = async e => {
   e.preventDefault();
   $('fBtn').disabled = true;
   $('fErr').textContent = '';
+  $('fErr').classList.remove('ok');
   try {
     const body = { username: $('fUser').value.trim(), password: $('fPass').value };
     if (authMode === 'register') body.name = $('fName').value.trim();
@@ -1084,6 +1209,7 @@ addEventListener('keydown', e => {
   if (!$('commModal').classList.contains('hidden')) closeCommModal();
   if (!$('marketModal').classList.contains('hidden')) closeMarket();
   if (!$('verifModal').classList.contains('hidden')) closeVerify();
+  if (!$('recModal').classList.contains('hidden')) { closeRecovery(); return; }
   if (!$('setModal').classList.contains('hidden')) closeSettings();
 });
 // community — сразу выбрать «от имени сообщества» (когда «＋» нажат на странице сообщества)
@@ -1930,30 +2056,81 @@ function usernameChips(u) {
 }
 
 // ================= Настройки клиента (шестерёнка в своём профиле) =================
+// Главное меню из трёх пунктов: Тема, Язык, Конфиденциальность; каждый открывает своё подменю.
+const SET_PAGES = {
+  main: ['setMain', 'Настройки'],
+  theme: ['setPageTheme', 'Тема'],
+  lang: ['setPageLang', 'Язык'],
+  privacy: ['setPagePrivacy', 'Конфиденциальность'],
+  password: ['setPagePassword', 'Сменить пароль'],
+  email: ['setPageEmail', 'Почта для восстановления'],
+};
+const SET_PARENT = { theme: 'main', lang: 'main', privacy: 'main', password: 'privacy', email: 'privacy' };
+let setPage = 'main';
+
 $('profGear').onclick = openSettings;
 $('setClose').onclick = closeSettings;
+$('setBack').onclick = () => showSetPage(SET_PARENT[setPage] || 'main');
 $('setModal').addEventListener('mousedown', e => { if (e.target === $('setModal')) closeSettings(); });
 function closeSettings() { $('setModal').classList.add('hidden'); }
+
 function openSettings() {
-  const theme = document.documentElement.dataset.theme;
-  document.querySelectorAll('#setTheme button').forEach(b => b.classList.toggle('on', b.dataset.v === theme));
-  document.querySelectorAll('#setLang button').forEach(b => b.classList.toggle('on', b.dataset.v === LANG));
-  $('pwOld').value = $('pwNew').value = $('pwNew2').value = '';
-  $('pwErr').textContent = ''; $('pwErr').classList.remove('ok');
+  paintSettings();
+  showSetPage('main');
   $('setModal').classList.remove('hidden');
+  loadMyEmail();
 }
-document.querySelectorAll('#setTheme button').forEach(b => b.onclick = () => {
-  const t = b.dataset.v;
+
+function showSetPage(page) {
+  setPage = page;
+  for (const [k, [id]] of Object.entries(SET_PAGES)) $(id).classList.toggle('hidden', k !== page);
+  $('setTitle').textContent = SET_PAGES[page][1];
+  $('setBack').classList.toggle('hidden', page === 'main');
+  $('setClose').classList.toggle('hidden', page !== 'main');
+  if (page === 'password') {
+    $('pwOld').value = $('pwNew').value = $('pwNew2').value = '';
+    $('pwErr').textContent = ''; $('pwErr').classList.remove('ok');
+  }
+  if (page === 'email') { $('emailErr').textContent = ''; $('emailErr').classList.remove('ok'); $('emailInput').value = S.myEmail || ''; }
+}
+
+document.querySelectorAll('#setMain .set-row, #setPagePrivacy .set-row').forEach(b => b.onclick = () => {
+  const p = b.dataset.page || b.dataset.sub;
+  if (p === 'forgot') openRecovery();
+  else showSetPage(p);
+});
+
+function paintSettings() {
+  const light = document.documentElement.dataset.theme === 'light';
+  $('themeSwitch').classList.toggle('on', light);
+  $('themeSwitch').setAttribute('aria-checked', light);
+  document.querySelectorAll('.sw-label').forEach(l => l.classList.toggle('on', l.dataset.v === (light ? 'light' : 'dark')));
+  $('setThemeVal').textContent = light ? 'Светлая' : 'Тёмная';
+  // в пункте «Язык» — название и флаг текущего языка
+  const cur = document.querySelector(`.lang-item[data-v="${LANG}"]`);
+  $('setLangVal').replaceChildren(cur.querySelector('span').textContent, cur.querySelector('.flag').cloneNode(true));
+  document.querySelectorAll('.lang-item').forEach(i => i.classList.toggle('on', i.dataset.v === LANG));
+  $('setEmailVal').textContent = S.myEmail || L('не привязана', 'not linked');
+}
+
+// Тема: переключатель влево (тёмная) — вправо (светлая); подписи тоже нажимаются
+function setTheme(t) {
   document.documentElement.dataset.theme = t;
   document.querySelector('meta[name=theme-color]').content = t === 'light' ? '#f4f5f7' : '#0f1115';
   store('divy_theme', t);
-  document.querySelectorAll('#setTheme button').forEach(x => x.classList.toggle('on', x === b));
-});
-document.querySelectorAll('#setLang button').forEach(b => b.onclick = () => {
+  paintSettings();
+}
+$('themeSwitch').onclick = () => setTheme(document.documentElement.dataset.theme === 'light' ? 'dark' : 'light');
+document.querySelectorAll('.sw-label').forEach(l => l.onclick = () => setTheme(l.dataset.v));
+
+// Язык: нажали на язык в списке — он сразу применяется (интерфейс перезагружается)
+document.querySelectorAll('.lang-item').forEach(b => b.onclick = () => {
   if (b.dataset.v === LANG) return;
   store('divy_lang', b.dataset.v);
-  location.reload(); // язык применяется ко всему интерфейсу при перезагрузке
+  location.reload();
 });
+
+// Смена пароля
 $('pwSave').onclick = async () => {
   const err = $('pwErr');
   err.classList.remove('ok');
@@ -1967,6 +2144,83 @@ $('pwSave').onclick = async () => {
     err.textContent = 'Пароль изменён. На других устройствах нужно будет войти заново.';
   } catch (e) { err.textContent = e instanceof TypeError ? 'Сервер недоступен' : e.message; }
   $('pwSave').disabled = false;
+};
+
+// Почта для восстановления
+async function loadMyEmail() {
+  try { S.myEmail = (await api('/api/me/email')).email || ''; paintSettings(); } catch {}
+}
+$('emailSave').onclick = async () => {
+  const err = $('emailErr');
+  err.classList.remove('ok');
+  err.textContent = '';
+  $('emailSave').disabled = true;
+  try {
+    const r = await api('/api/me/email', { method: 'POST', body: { email: $('emailInput').value.trim() } });
+    S.myEmail = r.email;
+    paintSettings();
+    err.classList.add('ok');
+    err.textContent = r.email ? 'Почта сохранена' : 'Почта отвязана';
+  } catch (e) { err.textContent = e instanceof TypeError ? 'Сервер недоступен' : e.message; }
+  $('emailSave').disabled = false;
+};
+
+// ================= «Забыл пароль»: почта → код → новый пароль =================
+// Синяя надпись «Забыл пароль» стоит под каждым полем ввода текущего пароля (класс .forgot).
+document.addEventListener('click', e => { if (e.target.closest('.forgot')) { e.preventDefault(); openRecovery(); } });
+$('recClose').onclick = closeRecovery;
+$('recModal').addEventListener('mousedown', e => { if (e.target === $('recModal')) closeRecovery(); });
+function closeRecovery() { $('recModal').classList.add('hidden'); }
+
+function openRecovery() {
+  $('recStep1').classList.remove('hidden');
+  $('recStep2').classList.add('hidden');
+  $('recErr').textContent = ''; $('recErr').classList.remove('ok');
+  $('recEmail').value = S.myEmail || '';
+  $('recCode').value = $('recNew').value = $('recNew2').value = '';
+  $('recModal').classList.remove('hidden');
+  $('recEmail').focus();
+}
+
+async function sendRecoveryCode() {
+  $('recErr').textContent = ''; $('recErr').classList.remove('ok');
+  $('recSend').disabled = $('recResend').disabled = true;
+  try {
+    await api('/api/recovery/start', { method: 'POST', body: { email: $('recEmail').value.trim() } });
+    $('recStep1').classList.add('hidden');
+    $('recStep2').classList.remove('hidden');
+    $('recCode').focus();
+  } catch (e) { $('recErr').textContent = e instanceof TypeError ? 'Сервер недоступен' : e.message; }
+  $('recSend').disabled = $('recResend').disabled = false;
+}
+$('recSend').onclick = sendRecoveryCode;
+$('recEmail').addEventListener('keydown', e => { if (e.key === 'Enter') sendRecoveryCode(); });
+$('recResend').onclick = async () => {
+  await sendRecoveryCode();
+  if (!$('recErr').textContent) { $('recErr').classList.add('ok'); $('recErr').textContent = 'Код отправлен ещё раз'; }
+};
+
+$('recSave').onclick = async () => {
+  const err = $('recErr');
+  err.classList.remove('ok');
+  err.textContent = '';
+  if ($('recNew').value !== $('recNew2').value) { err.textContent = 'Пароли не совпадают'; return; }
+  $('recSave').disabled = true;
+  try {
+    await api('/api/recovery/finish', { method: 'POST', body: {
+      email: $('recEmail').value.trim(), code: $('recCode').value.trim(), new: $('recNew').value } });
+    closeRecovery();
+    if (S.token) { // все сессии сброшены — входим заново с новым паролем
+      alert('Пароль изменён. Войдите с новым паролем.');
+      logout(false);
+    } else {
+      $('fErr').classList.add('ok');
+      $('fErr').textContent = 'Пароль изменён. Войдите с новым паролем.';
+      $('fPass').value = '';
+      $('fPass').focus();
+    }
+  } catch (e) { err.textContent = e instanceof TypeError ? 'Сервер недоступен' : e.message; }
+  $('recSave').disabled = false;
 };
 
 // ================= Площадка юзернеймов =================
