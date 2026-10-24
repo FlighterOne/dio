@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
 <meta name="theme-color" content="#0f1115">
-<title>dio</title>
+<title>divy</title>
 <script>
 // Определяем устройство ДО отрисовки, чтобы не было «прыжка» дизайна.
 (function () {
@@ -97,7 +97,7 @@ svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:2; s
 .modal { position:fixed; inset:0; z-index:40; background:rgba(0,0,0,.6); display:flex; align-items:flex-start; justify-content:center; padding:8vh 16px 16px }
 .sheet { width:100%; max-width:600px; background:var(--panel); border:1px solid var(--line); border-radius:18px; display:flex; flex-direction:column; max-height:84vh }
 .sheet-head { display:flex; align-items:center; gap:8px; padding:8px 10px; border-bottom:1px solid var(--line); font-weight:700 }
-.new-post { display:flex; gap:12px; padding:14px 16px; overflow-y:auto }
+.new-post { display:flex; gap:12px; padding:14px 16px }
 .new-post .ava { width:44px; height:44px }
 #postInput { flex:1; min-width:0; background:none; border:0; outline:none; resize:none; font-size:17px; min-height:120px; padding:10px 0 }
 .new-post-foot { display:flex; justify-content:flex-end; align-items:center; gap:12px; padding:10px 16px; border-top:1px solid var(--line) }
@@ -114,6 +114,36 @@ svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:2; s
 .post-del svg { width:17px; height:17px }
 .post-del:hover { color:var(--danger); background:rgba(255,107,107,.1) }
 .post-body { white-space:pre-wrap; overflow-wrap:anywhere; margin-top:2px; font-size:15.5px }
+
+/* карусель фото/видео в посте */
+.car { position:relative; margin-top:10px; border-radius:14px; overflow:hidden; background:#000; border:1px solid var(--line); touch-action:pan-y; user-select:none; max-height:640px }
+.car-track { display:flex; height:100%; transition:transform .3s ease }
+.car-slide { flex:0 0 100%; height:100%; display:grid; place-items:center; overflow:hidden }
+.car-slide img, .car-slide video { width:100%; height:100%; object-fit:contain; display:block; background:#000 }
+.car-btn { position:absolute; top:50%; transform:translateY(-50%); width:38px; height:38px; border-radius:50%; background:rgba(0,0,0,.45); color:#fff; display:grid; place-items:center; -webkit-backdrop-filter:blur(4px); backdrop-filter:blur(4px); opacity:.85; z-index:2 }
+.car-btn:hover { background:rgba(0,0,0,.65); opacity:1 }
+.car-btn.prev { left:10px }
+.car-btn.next { right:10px }
+.car-count { position:absolute; top:10px; right:10px; background:rgba(0,0,0,.55); color:#fff; font-size:12px; font-weight:600; padding:3px 8px; border-radius:10px; z-index:2; pointer-events:none }
+.car-dots { position:absolute; bottom:10px; left:0; right:0; display:flex; justify-content:center; gap:5px; pointer-events:none; z-index:2; transition:opacity .2s }
+.car-dots i { width:6px; height:6px; border-radius:50%; background:rgba(255,255,255,.45) }
+.car-dots i.on { background:#fff }
+.car-dots.off { opacity:0 }
+
+/* вложения в окне нового поста */
+.sheet-mid { overflow-y:auto; min-height:0; flex:1 1 auto }
+.attach-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(92px, 1fr)); gap:8px; padding:0 16px 14px }
+.att { position:relative; aspect-ratio:1; border-radius:12px; overflow:hidden; background:var(--panel2); border:1px solid var(--line) }
+.att img, .att video { width:100%; height:100%; object-fit:cover; display:block }
+.att-x { position:absolute; top:4px; right:4px; width:24px; height:24px; border-radius:50%; background:rgba(0,0,0,.65); color:#fff; display:grid; place-items:center; z-index:2 }
+.att-x svg { width:14px; height:14px }
+.att-state { position:absolute; inset:0; display:grid; place-items:center; background:rgba(0,0,0,.45); color:#fff; font-size:13px; font-weight:700; text-align:center; padding:6px }
+.att-state.err { background:rgba(140,25,25,.75); font-size:11px; cursor:pointer }
+.att-vid { position:absolute; left:6px; bottom:6px; background:rgba(0,0,0,.6); color:#fff; font-size:11px; padding:1px 6px; border-radius:8px }
+.attach-tools { display:flex; align-items:center; gap:6px; margin-right:auto }
+.attach-btn { color:var(--accent) }
+.attach-count { color:var(--muted); font-size:13px }
+.sheet.drop { outline:2px dashed var(--accent); outline-offset:-6px }
 .post-actions { display:flex; gap:16px; margin:6px 0 0 -8px }
 .act { display:flex; align-items:center; gap:6px; color:var(--muted); padding:5px 8px; border-radius:16px; font-size:14px }
 .act svg { width:19px; height:19px }
@@ -268,7 +298,8 @@ svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:2; s
 [data-device=phone] #postInput { font-size:16px } /* 16px — чтобы iOS не зумил поле */
 [data-device=phone] .modal { padding:0 }
 [data-device=phone] .sheet { max-width:none; max-height:none; height:100dvh; border:0; border-radius:0; padding-top:env(safe-area-inset-top); padding-bottom:env(safe-area-inset-bottom) }
-[data-device=phone] .new-post, [data-device=phone] .sheet-body { flex:1 }
+[data-device=phone] .sheet-body { flex:1 }
+[data-device=phone] .car { border-radius:12px; margin-left:-2px; margin-right:-2px }
 [data-device=phone] #input { font-size:16px }
 [data-device=phone] .ava.big { width:76px; height:76px; font-size:30px }
 [data-device=phone] .prof-btns .btn.small { padding:6px 12px }
@@ -281,7 +312,7 @@ svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:2; s
 <!-- ================= Вход ================= -->
 <section id="auth" class="hidden">
   <form class="card" id="authForm">
-    <div class="logo">di<span>o</span></div>
+    <div class="logo">div<span>y</span></div>
     <div class="sub">социальная сеть</div>
     <div class="tabs">
       <button type="button" data-mode="login" class="on">Вход</button>
@@ -319,7 +350,7 @@ svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:2; s
     <section class="view" id="vFeed">
       <div class="col">
         <div class="feed-head">
-          <div class="brand" id="brand" title="Наверх">di<span>o</span></div>
+          <div class="brand" id="brand" title="Наверх">div<span>y</span></div>
           <button class="pill hidden" id="newPosts"></button>
         </div>
         <div id="feedList"></div>
@@ -420,7 +451,7 @@ svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:2; s
         <div class="adm-section">
           <div class="adm-title">Юзернеймы площадки</div>
           <div id="admMarketForm" class="hidden">
-            <input class="field" id="lUser" placeholder="Юзернейм (латиница, цифры, _)" autocomplete="off" autocapitalize="off" spellcheck="false">
+            <input class="field" id="lUser" maxlength="20" placeholder="Юзернейм: от 1 до 20 символов (латиница, цифры, _)" autocomplete="off" autocapitalize="off" spellcheck="false">
             <div class="seg" id="lKind">
               <button type="button" data-kind="sale" class="on">Продажа</button>
               <button type="button" data-kind="raffle">Розыгрыш</button>
@@ -449,11 +480,22 @@ svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:2; s
       <button data-as="community">Как сообщество</button>
     </div>
     <div class="as-list hidden" id="asList"></div>
-    <div class="new-post">
-      <div class="ava" id="postAva"></div>
-      <textarea id="postInput" placeholder="Что нового?"></textarea>
+    <div class="sheet-mid">
+      <div class="new-post">
+        <div class="ava" id="postAva"></div>
+        <textarea id="postInput" placeholder="Что нового?"></textarea>
+      </div>
+      <!-- выбранные фото и видео (до 10) -->
+      <div class="attach-grid hidden" id="attachGrid"></div>
     </div>
     <div class="new-post-foot">
+      <div class="attach-tools">
+        <button class="icon-btn attach-btn" id="attachBtn" title="Добавить фото или видео (до 10, видео — до 1 минуты)">
+          <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+        </button>
+        <span class="attach-count" id="attachCount"></span>
+        <input type="file" id="attachInput" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/quicktime" multiple hidden>
+      </div>
       <span class="counter" id="postCount"></span>
       <button class="btn small" id="postBtn" disabled>Опубликовать</button>
     </div>
@@ -468,7 +510,7 @@ svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:2; s
       Юзернеймы площадки
     </div>
     <div class="sheet-body">
-      <div class="hint">dio продаёт и разыгрывает красивые юзернеймы. Полученный юзернейм добавится к вашему профилю как дополнительный — по нему вас тоже можно будет найти.</div>
+      <div class="hint">divy продаёт и разыгрывает красивые юзернеймы. Полученный юзернейм добавится к вашему профилю как дополнительный — по нему вас тоже можно будет найти.</div>
       <div id="marketList"></div>
     </div>
   </div>
@@ -482,7 +524,7 @@ svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:2; s
       Верификация аккаунта
     </div>
     <div class="sheet-body" id="verifBody">
-      <div class="hint">Галочка подтверждает, что аккаунт действительно принадлежит известному человеку, автору, бренду или СМИ. Заявку проверят модераторы dio.</div>
+      <div class="hint">Галочка подтверждает, что аккаунт действительно принадлежит известному человеку, автору, бренду или СМИ. Заявку проверят модераторы divy.</div>
       <div id="verifStatus" class="verif-status hidden"></div>
       <div id="verifForm">
         <div class="field-label">Кто вы</div>
@@ -494,7 +536,7 @@ svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:2; s
           <button type="button" data-cat="other">Другое</button>
         </div>
         <div class="field-label">Почему аккаунт стоит верифицировать</div>
-        <textarea class="field" id="vReason" rows="4" maxlength="1000" placeholder="Кто вы, чем занимаетесь, почему вас могут искать в dio"></textarea>
+        <textarea class="field" id="vReason" rows="4" maxlength="1000" placeholder="Кто вы, чем занимаетесь, почему вас могут искать в divy"></textarea>
         <div class="field-label">Ссылки, подтверждающие личность (необязательно)</div>
         <textarea class="field" id="vLinks" rows="2" maxlength="500" placeholder="Сайт, соцсети, статьи о вас — по одной в строке"></textarea>
         <button class="btn" id="vSend">Отправить на модерацию</button>
@@ -513,7 +555,7 @@ svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:2; s
     </div>
     <div class="sheet-body">
       <input class="field" id="cName" placeholder="Название" maxlength="64" autocomplete="off">
-      <input class="field" id="cSlug" placeholder="Адрес: латиница, цифры и _ (например, my_club)" maxlength="33" autocomplete="off" autocapitalize="off" spellcheck="false">
+      <input class="field" id="cSlug" placeholder="Адрес: 5–20 символов, латиница, цифры и _ (например, my_club)" maxlength="21" autocomplete="off" autocapitalize="off" spellcheck="false">
       <textarea class="field" id="cDesc" rows="3" placeholder="Описание (необязательно)" maxlength="300"></textarea>
       <div class="err" id="cErr"></div>
     </div>
@@ -540,6 +582,10 @@ const PING_EVERY = 20000;       // проверка, что соединение
 const PONG_WAIT = 8000;
 const SEND_TIMEOUT = 10000;     // нет подтверждения — помечаем сообщение «не отправлено»
 const POST_MAX = 5000;
+const MAX_MEDIA = 10;                  // фото и видео в одном посте
+const IMAGE_MAX_BYTES = 15 * 1024 * 1024;
+const VIDEO_MAX_BYTES = 100 * 1024 * 1024;
+const VIDEO_MAX_SECS = 60;
 
 const ICON = {
   heart: '<svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8z"/></svg>',
@@ -572,6 +618,7 @@ const S = {
   myComms: null,      // сообщества, от имени которых я могу публиковать
   postAs: null,       // от чьего имени пишу пост: null — от себя, иначе сообщество
   asTab: 'user',
+  attach: [],         // фото/видео, прикреплённые к новому посту
 };
 let searchMode = false, searchTimer = 0, authMode = 'login', navDepth = 0;
 
@@ -683,6 +730,8 @@ document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => {
   document.querySelectorAll('.tabs button').forEach(x => x.classList.toggle('on', x === b));
   $('fName').classList.toggle('hidden', authMode !== 'register');
   $('fBtn').textContent = authMode === 'login' ? 'Войти' : 'Создать аккаунт';
+  $('fUser').placeholder = authMode === 'login' ? 'Логин' : 'Логин: 5–20 символов (латиница, цифры, _)';
+  $('fPass').placeholder = authMode === 'login' ? 'Пароль' : 'Пароль: минимум 8 символов';
   $('fPass').autocomplete = authMode === 'login' ? 'current-password' : 'new-password';
   $('fErr').textContent = '';
 });
@@ -918,19 +967,27 @@ function updateCounter() {
   const left = POST_MAX - n;
   $('postCount').textContent = left < 500 ? left : '';
   $('postCount').classList.toggle('over', left < 0);
+  const uploading = S.attach.some(a => a.status === 'uploading');
+  const failed = S.attach.some(a => a.status === 'error');
+  const hasMedia = S.attach.some(a => a.status === 'done');
+  $('attachCount').textContent = S.attach.length ? `${S.attach.length}/${MAX_MEDIA}` : '';
+  $('attachBtn').disabled = S.attach.length >= MAX_MEDIA;
+  // пост — это текст и/или фото-видео; ждём, пока все файлы загрузятся;
   // в режиме «как сообщество» без выбранного сообщества публиковать нечего
-  $('postBtn').disabled = !n || left < 0 || (S.asTab === 'community' && !S.postAs);
+  $('postBtn').disabled = (!n && !hasMedia) || left < 0 || uploading || failed || (S.asTab === 'community' && !S.postAs);
+  $('postBtn').textContent = uploading ? 'Загрузка…' : 'Опубликовать';
 }
 async function publish() {
   const body = $('postInput').value.trim();
-  if (!body || body.length > POST_MAX || $('postBtn').disabled) return;
+  if ((!body && !S.attach.length) || body.length > POST_MAX || $('postBtn').disabled) return;
   $('postBtn').disabled = true;
   try {
-    const req = { body };
+    const req = { body, media: S.attach.map(a => a.media.id) };
     if (S.postAs) req.community_id = S.postAs.id;
     const p = await api('/api/posts', { method: 'POST', body: req });
     $('postInput').value = '';
     $('postInput').style.height = '';
+    clearAttach();
     closeComposer();
     cachePost(p);
     prependPost(FEED, p);
@@ -946,6 +1003,189 @@ function placeNewPost(p) {
   } else if (S.prof && S.prof.id === p.author.id) {
     prependPost(PROF, p); S.prof.posts++; renderProfile();
   }
+}
+
+// --- фото и видео в новом посте ---
+$('attachBtn').onclick = () => $('attachInput').click();
+$('attachInput').onchange = () => { addFiles([...$('attachInput').files]); $('attachInput').value = ''; };
+// файлы можно перетащить прямо в окно поста
+$('postModal').addEventListener('dragover', e => { e.preventDefault(); $('postModal').querySelector('.sheet').classList.add('drop'); });
+$('postModal').addEventListener('dragleave', e => { if (e.target === $('postModal')) $('postModal').querySelector('.sheet').classList.remove('drop'); });
+$('postModal').addEventListener('drop', e => {
+  e.preventDefault();
+  $('postModal').querySelector('.sheet').classList.remove('drop');
+  addFiles([...e.dataTransfer.files]);
+});
+
+function videoDuration(url) {
+  return new Promise(res => {
+    const v = document.createElement('video');
+    v.preload = 'metadata';
+    v.onloadedmetadata = () => res(v.duration || 0);
+    v.onerror = () => res(0); // не смогли прочитать — пусть проверит сервер
+    v.src = url;
+  });
+}
+
+async function addFiles(files) {
+  for (const f of files) {
+    if (S.attach.length >= MAX_MEDIA) { alert(`В одном посте — не больше ${MAX_MEDIA} фото и видео`); break; }
+    const kind = f.type.startsWith('video/') ? 'video' : f.type.startsWith('image/') ? 'image' : '';
+    if (!kind) { alert(`«${f.name}» — не фото и не видео`); continue; }
+    if (kind === 'image' && f.size > IMAGE_MAX_BYTES) { alert(`Фото «${f.name}» больше 15 МБ`); continue; }
+    if (kind === 'video' && f.size > VIDEO_MAX_BYTES) { alert(`Видео «${f.name}» больше 100 МБ`); continue; }
+    const it = { key: newCid(), file: f, kind, url: URL.createObjectURL(f), status: 'uploading', progress: 0 };
+    if (kind === 'video' && await videoDuration(it.url) > VIDEO_MAX_SECS + 0.5) {
+      alert(`Видео «${f.name}» длиннее 1 минуты`);
+      URL.revokeObjectURL(it.url);
+      continue;
+    }
+    S.attach.push(it);
+    renderAttach();
+    uploadItem(it);
+  }
+}
+
+function uploadItem(it) {
+  it.status = 'uploading'; it.progress = 0; it.error = '';
+  const fd = new FormData();
+  fd.append('file', it.file);
+  const xhr = new XMLHttpRequest(); // XHR, а не fetch — чтобы показывать процент загрузки
+  it.xhr = xhr;
+  xhr.open('POST', SERVER + '/api/upload');
+  xhr.setRequestHeader('Authorization', 'Bearer ' + S.token);
+  xhr.upload.onprogress = e => { if (e.lengthComputable) { it.progress = e.loaded / e.total; paintAttach(it); } };
+  xhr.onload = () => {
+    let d = {};
+    try { d = JSON.parse(xhr.responseText); } catch {}
+    if (xhr.status === 200) { it.status = 'done'; it.media = d; }
+    else { it.status = 'error'; it.error = d.error || (xhr.status === 413 ? 'Файл слишком большой' : 'Ошибка ' + xhr.status); }
+    paintAttach(it); updateCounter();
+  };
+  xhr.onerror = () => { it.status = 'error'; it.error = 'Сервер недоступен'; paintAttach(it); updateCounter(); };
+  xhr.send(fd);
+  paintAttach(it); updateCounter();
+}
+
+function renderAttach() {
+  const grid = $('attachGrid');
+  grid.replaceChildren();
+  grid.classList.toggle('hidden', !S.attach.length);
+  for (const it of S.attach) {
+    const tile = el('div', 'att');
+    if (it.kind === 'video') {
+      const v = document.createElement('video');
+      v.src = it.url; v.muted = true; v.playsInline = true; v.preload = 'metadata';
+      tile.append(v, el('span', 'att-vid', '▶ видео'));
+    } else {
+      const img = document.createElement('img');
+      img.src = it.url; img.alt = '';
+      tile.append(img);
+    }
+    const x = el('button', 'att-x');
+    x.type = 'button'; x.title = 'Убрать';
+    x.innerHTML = '<svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>';
+    x.onclick = () => removeAttach(it);
+    it.state = el('div', 'att-state');
+    it.state.onclick = () => { if (it.status === 'error') uploadItem(it); }; // повторить
+    tile.append(it.state, x);
+    grid.append(tile);
+    paintAttach(it);
+  }
+  updateCounter();
+}
+
+function paintAttach(it) {
+  if (!it.state) return;
+  it.state.className = 'att-state' + (it.status === 'error' ? ' err' : '');
+  it.state.classList.toggle('hidden', it.status === 'done');
+  it.state.textContent = it.status === 'uploading' ? Math.round(it.progress * 100) + '%'
+    : it.status === 'error' ? it.error + ' · нажмите, чтобы повторить' : '';
+}
+
+function removeAttach(it) {
+  if (it.xhr && it.status === 'uploading') it.xhr.abort();
+  URL.revokeObjectURL(it.url);
+  S.attach = S.attach.filter(a => a !== it);
+  renderAttach();
+}
+
+function clearAttach() {
+  for (const it of S.attach) URL.revokeObjectURL(it.url);
+  S.attach = [];
+  renderAttach();
+}
+
+// --- карусель фото/видео в посте: по кругу (после последнего — снова первое) ---
+function carousel(media) {
+  const wrap = el('div', 'car');
+  const track = el('div', 'car-track');
+  const n = media.length;
+  let i = 0;
+  const setRatio = (w, h) => { if (w && h) wrap.style.aspectRatio = Math.min(Math.max(w / h, 0.8), 1.91); };
+  wrap.style.aspectRatio = 1;
+  setRatio(media[0].w, media[0].h); // форма карусели — по первому (титульному) материалу
+  media.forEach((m, k) => {
+    const slide = el('div', 'car-slide');
+    if (m.kind === 'video') {
+      const v = document.createElement('video');
+      v.src = SERVER + m.url; v.controls = true; v.playsInline = true; v.preload = 'metadata';
+      if (k === 0 && !m.w) v.addEventListener('loadedmetadata', () => setRatio(v.videoWidth, v.videoHeight), { once: true });
+      slide.append(v);
+    } else {
+      const img = document.createElement('img');
+      img.src = SERVER + m.url; img.alt = ''; img.loading = 'lazy'; img.draggable = false;
+      slide.append(img);
+    }
+    track.append(slide);
+  });
+  wrap.append(track);
+  if (n < 2) return wrap;
+
+  const count = el('div', 'car-count');
+  const dots = el('div', 'car-dots');
+  for (let k = 0; k < n; k++) dots.append(el('i'));
+  const show = k => {
+    const prev = track.children[i].querySelector('video');
+    if (prev) prev.pause();
+    i = (k + n) % n;
+    track.style.transform = `translateX(${-100 * i}%)`;
+    count.textContent = `${i + 1}/${n}`;
+    [...dots.children].forEach((d, j) => d.classList.toggle('on', j === i));
+    dots.classList.toggle('off', media[i].kind === 'video'); // не перекрываем кнопки видеоплеера
+  };
+  wrap.append(count, dots);
+
+  if (DEVICE === 'pc') {
+    // на ПК — полупрозрачные круглые кнопки по бокам
+    const btn = (cls, path, d) => {
+      const b = el('button', 'car-btn ' + cls);
+      b.type = 'button';
+      b.innerHTML = `<svg viewBox="0 0 24 24"><path d="${path}"/></svg>`;
+      b.onclick = e => { e.stopPropagation(); show(i + d); };
+      return b;
+    };
+    wrap.append(btn('prev', 'M15 18l-6-6 6-6', -1), btn('next', 'M9 18l6-6-6-6', 1));
+  } else {
+    // на телефоне — только свайпы: карусель едет за пальцем
+    let sx = 0, sy = 0, dx = 0, axis = '';
+    wrap.addEventListener('touchstart', e => {
+      sx = e.touches[0].clientX; sy = e.touches[0].clientY; dx = 0; axis = '';
+      track.style.transition = 'none';
+    }, { passive: true });
+    wrap.addEventListener('touchmove', e => {
+      const x = e.touches[0].clientX - sx, y = e.touches[0].clientY - sy;
+      if (!axis && (Math.abs(x) > 8 || Math.abs(y) > 8)) axis = Math.abs(x) > Math.abs(y) ? 'x' : 'y';
+      if (axis === 'x') { dx = x; track.style.transform = `translateX(calc(${-100 * i}% + ${dx}px))`; }
+    }, { passive: true });
+    wrap.addEventListener('touchend', () => {
+      track.style.transition = '';
+      if (axis === 'x' && Math.abs(dx) > 40) show(i + (dx < 0 ? 1 : -1));
+      else show(i);
+    });
+  }
+  show(0);
+  return wrap;
 }
 
 // --- списки постов ---
@@ -1051,7 +1291,10 @@ function postNode(p) {
   like.append(el('span', 'n'));
   like.onclick = () => toggleLike(p.id);
   acts.append(like);
-  main.append(head, el('div', 'post-body', p.body), acts);
+  main.append(head);
+  if (p.body) main.append(el('div', 'post-body', p.body));
+  if (p.media && p.media.length) main.append(carousel(p.media));
+  main.append(acts);
   art.append(ava, main);
   paintLike(art, p);
   return art;
@@ -1410,7 +1653,7 @@ function editProfile() {
   const name = el('input', 'field');
   name.value = u.name; name.maxLength = 64; name.placeholder = 'Имя';
   const uname = el('input', 'field');
-  uname.value = u.username; uname.maxLength = 33; uname.placeholder = 'Юзернейм (латиница, цифры, _)';
+  uname.value = u.username; uname.maxLength = 21; uname.placeholder = 'Юзернейм: 5–20 символов (латиница, цифры, _)';
   uname.autocapitalize = 'off'; uname.spellcheck = false; uname.autocomplete = 'off';
   const more = el('button', 'link-btn', '+ Добавить ещё один юзернейм');
   more.type = 'button';
@@ -1443,6 +1686,7 @@ function editProfile() {
   row.append(save, cancel);
   const extra = u.usernames && u.usernames.length ? el('div', 'extra-names', 'Дополнительные: ' + u.usernames.map(x => '@' + x).join(', ')) : null;
   box.append(el('div', 'prof-name', 'Редактирование'), el('div', null, ' '), name, uname);
+  box.append(Object.assign(el('div', 'extra-names', 'Юзернейм — это и ваш логин для входа. Дополнительные юзернеймы для входа не подходят.'), { style: 'margin:-4px 0 8px' }));
   if (extra) { extra.style.margin = '-4px 0 6px'; box.append(extra); }
   box.append(more, bio, row, err);
   name.focus();
@@ -1848,7 +2092,7 @@ function chatItem(c) {
 function updateUnread() {
   let n = 0;
   for (const c of S.chats.values()) n += c.unread || 0;
-  document.title = n ? `(${n}) dio` : 'dio';
+  document.title = n ? `(${n}) divy` : 'divy';
   $('navBadge').textContent = n > 99 ? '99+' : n;
   $('navBadge').classList.toggle('hidden', !n);
 }
